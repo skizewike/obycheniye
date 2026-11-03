@@ -1,5 +1,12 @@
-"""Собирает site/index.html для Vercel из учебник.html (той же страницы, что и артефакт)."""
+"""Собирает курс из course.html: учебник.html (артефакт Claude) и site/index.html (Vercel).
+
+В course.html метки <!--INCLUDE:файл--> заменяются содержимым файла, поэтому код в курсе
+всегда совпадает с настоящими shop_app.py, schema.sql и migrate.sql.
+Метка <!--RAW:файл--> вставляет файл как есть (для SVG-схемы).
+"""
+import html
 import json
+import re
 import shutil
 from pathlib import Path
 
@@ -33,13 +40,25 @@ MANIFEST = {
     "icons": [{"src": "icon.png", "sizes": "512x512", "type": "image/png"}],
 }
 
-page = (ROOT / "учебник.html").read_text(encoding="utf-8")
-# Всё до первого <nav> — это title/meta/style страницы, они идут в <head>
-head_part, body_part = page.split('<nav class="chips"', 1)
+
+def include(match):
+    return html.escape((ROOT / match.group(1)).read_text(encoding="utf-8").rstrip("\n"), quote=False)
+
+
+def include_raw(match):
+    return (ROOT / match.group(1)).read_text(encoding="utf-8")
+
+
+page = (ROOT / "course.html").read_text(encoding="utf-8")
+page = re.sub(r"<!--INCLUDE:(.+?)-->", include, page)
+page = re.sub(r"<!--RAW:(.+?)-->", include_raw, page)
+head_part, body_part = page.split("<!--BODY-->", 1)
+
+(ROOT / "учебник.html").write_text(head_part + body_part, encoding="utf-8")
 
 SITE.mkdir(exist_ok=True)
 (SITE / "index.html").write_text(
-    HEAD + head_part + "</head>\n<body>\n<nav class=\"chips\"" + body_part + "\n</body>\n</html>\n",
+    HEAD + head_part + "</head>\n<body>" + body_part + "\n</body>\n</html>\n",
     encoding="utf-8",
 )
 (SITE / "manifest.json").write_text(json.dumps(MANIFEST, ensure_ascii=False, indent=2), encoding="utf-8")

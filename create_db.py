@@ -1,4 +1,8 @@
-"""Создаёт shop.db из schema.sql и xlsx-файлов в папке import."""
+"""Создаёт базу из schema.sql и xlsx-файлов.
+
+python create_db.py          -> shop.db из папки import
+python create_db.py import2  -> shop_import2.db из папки import2
+"""
 import datetime
 import sqlite3
 import sys
@@ -8,7 +12,7 @@ import openpyxl
 
 ROOT = Path(__file__).parent
 SRC = ROOT / (sys.argv[1] if len(sys.argv) > 1 else "import")
-DB = ROOT / "shop.db"
+DB = ROOT / ("shop.db" if SRC.name == "import" else f"shop_{SRC.name}.db")
 
 
 def rows(name, skip_header=True):

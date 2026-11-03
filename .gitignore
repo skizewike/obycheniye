@@ -2,3 +2,7 @@ __pycache__/
 *.pyc
 *.pdf
 .vercel/
+.claude/
+dist/
+build/
+*.spec
