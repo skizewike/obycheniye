@@ -2,7 +2,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=Unbounded:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
-/* Layout: one narrow reading column; a lesson list on start, one lesson per screen, sticky bar with prev/next */
+/* Layout: one narrow reading column; step list on start, one step per screen, sticky bar with prev/next; quiz and cards at the end */
 :root {
   --bg: #F6F8F7;
   --surface: #FFFFFF;
@@ -11,10 +11,11 @@
   --line: #DCE3DF;
   --accent: #2E8B57;          /* цвет из задания: скидка больше 15% */
   --accent-soft: #E3F1E9;
-  --sky: #CFE9F7;             /* цвет из задания: нет на складе */
-  --sky-fg: #0E4A6B;
   --warn: #B4401F;
   --warn-soft: #FBEAE4;
+  --ok: #2E8B57;
+  --bad: #C0392B;
+  --bad-soft: #FBE3E0;
   --code-bg: #10201A;
   --code-fg: #E4F0E9;
   --on-accent: #FFFFFF;
@@ -25,13 +26,15 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #0F1513; --surface: #17201C; --fg: #E6EEEA; --muted: #9AA9A2; --line: #2A3631;
-    --accent: #4CC184; --accent-soft: #1C3428; --sky: #163447; --sky-fg: #A9DAF5; --warn: #F08A68; --warn-soft: #3A2019;
+    --accent: #4CC184; --accent-soft: #1C3428; --warn: #F08A68; --warn-soft: #3A2019;
+    --ok: #4CC184; --bad: #F07A6A; --bad-soft: #3A1E1A;
     --code-bg: #0A0F0D; --code-fg: #DCEBE3; --on-accent: #0F1513; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #0F1513; --surface: #17201C; --fg: #E6EEEA; --muted: #9AA9A2; --line: #2A3631;
-  --accent: #4CC184; --accent-soft: #1C3428; --sky: #163447; --sky-fg: #A9DAF5; --warn: #F08A68; --warn-soft: #3A2019;
+  --accent: #4CC184; --accent-soft: #1C3428; --warn: #F08A68; --warn-soft: #3A2019;
+  --ok: #4CC184; --bad: #F07A6A; --bad-soft: #3A1E1A;
   --code-bg: #0A0F0D; --code-fg: #DCEBE3; --on-accent: #0F1513; color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -44,8 +47,8 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
   padding-block: 0 96px;
 }
 .eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
-h1 { font-family: var(--font-display); font-size: 26px; line-height: 1.2; margin: 6px 0 10px; text-wrap: balance; }
-h2 { font-family: var(--font-display); font-size: 20px; line-height: 1.25; margin: 30px 0 10px; text-wrap: balance; }
+h1 { font-family: var(--font-display); font-size: 25px; line-height: 1.2; margin: 6px 0 10px; text-wrap: balance; }
+h2 { font-family: var(--font-display); font-size: 19px; line-height: 1.25; margin: 30px 0 10px; text-wrap: balance; }
 h3 { font-size: 17px; margin: 22px 0 6px; font-weight: 600; }
 p { margin: 0 0 12px; }
 ul, ol { margin: 0 0 12px; padding-left: 22px; }
@@ -53,11 +56,7 @@ li { margin-bottom: 4px; }
 .lead { color: var(--muted); }
 a { color: var(--accent); }
 
-/* Верхняя полоса урока */
-.bar {
-  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
-  background: var(--surface); border-bottom: 1px solid var(--line);
-}
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
 .bar .row {
   max-width: 720px; margin: 0 auto; display: flex; gap: 8px; align-items: center; justify-content: space-between;
   padding-block: 8px;
@@ -67,13 +66,14 @@ a { color: var(--accent); }
 .bar a { text-decoration: none; color: var(--fg); font-size: 14px; font-weight: 500; border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; background: var(--bg); white-space: nowrap; }
 .bar .pos { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
 
-/* Список уроков */
-.toc { list-style: none; padding: 0; display: grid; gap: 8px; margin: 16px 0; }
-.toc a {
-  display: grid; grid-template-columns: 2.4em 1fr auto; gap: 10px; align-items: center;
-  text-decoration: none; color: var(--fg); background: var(--surface); border: 1px solid var(--line);
-  border-radius: 10px; padding: 12px 14px;
-}
+/* Путь экзамена на главной */
+.flowline { list-style: none; padding: 0; margin: 0 0 18px; display: grid; gap: 6px; }
+.flowline li { display: grid; grid-template-columns: 2.2em 1fr; gap: 10px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin: 0; }
+.flowline .n { font-family: var(--font-display); color: var(--accent); font-size: 15px; }
+.flowline small { display: block; color: var(--muted); font-size: 14px; }
+
+.toc { list-style: none; padding: 0; display: grid; gap: 8px; margin: 12px 0 18px; }
+.toc a { display: grid; grid-template-columns: 2.4em 1fr auto; gap: 10px; align-items: center; text-decoration: none; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
 .toc .n { font-family: var(--font-display); font-size: 15px; color: var(--accent); font-variant-numeric: tabular-nums; }
 .toc .t { font-weight: 600; line-height: 1.3; }
 .toc .d { display: block; font-weight: 400; font-size: 14px; color: var(--muted); }
@@ -87,6 +87,8 @@ section.lesson { padding-top: 20px; }
 .key { background: var(--accent-soft); border-left: 3px solid var(--accent); padding: 12px 14px; border-radius: 0 8px 8px 0; margin: 0 0 16px; }
 .trap { background: var(--warn-soft); border-left: 3px solid var(--warn); padding: 12px 14px; border-radius: 0 8px 8px 0; margin: 0 0 16px; }
 .trap b:first-child, .key b:first-child { display: block; }
+.check { background: var(--surface); border: 1px dashed var(--accent); border-radius: 10px; padding: 10px 14px; margin: 0 0 16px; }
+.check b:first-child { display: block; color: var(--accent); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
 .steps { counter-reset: s; list-style: none; padding: 0; display: grid; gap: 10px; margin: 0 0 16px; }
 .steps > li { counter-increment: s; display: grid; grid-template-columns: 2em 1fr; gap: 8px; margin: 0; }
 .steps > li::before { content: counter(s); font-family: var(--font-display); font-size: 14px; color: var(--on-accent); background: var(--accent); border-radius: 50%; width: 1.8em; height: 1.8em; display: grid; place-items: center; margin-top: 2px; }
@@ -97,24 +99,6 @@ table { border-collapse: collapse; width: 100%; font-size: 15px; font-variant-nu
 th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
 tr:last-child td { border-bottom: 0; }
-
-pre { background: var(--code-bg); color: var(--code-fg); font-family: var(--font-mono); font-size: 13px; line-height: 1.55; padding: 14px 16px; border-radius: 10px; overflow-x: auto; margin: 0 0 14px; }
-pre.full { max-height: 70vh; }
-code { font-family: var(--font-mono); font-size: .86em; }
-p code, li code, td code, .key code, .trap code { background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
-kbd { font-family: var(--font-mono); font-size: .82em; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--surface); }
-
-details.q { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; margin: 0 0 8px; }
-details.q summary { cursor: pointer; padding: 10px 14px; font-weight: 500; }
-details.q > div { padding: 0 14px 10px; color: var(--fg); }
-
-.swatches { display: grid; gap: 8px; margin: 0 0 16px; }
-.swatch { border-radius: 8px; padding: 10px 14px; font-size: 15px; border: 1px solid var(--line); }
-.sw-green { background: #2E8B57; color: #fff; }
-.sw-blue { background: #ADD8E6; color: #0E2A36; }
-.sw-white { background: #fff; color: #17211C; }
-.sw-white s { color: #D0302B; }
-
 @media (max-width: 600px) {
   table.stack thead { display: none; }
   table.stack tr { display: block; padding: 10px 12px; border-bottom: 1px solid var(--line); }
@@ -123,25 +107,22 @@ details.q > div { padding: 0 14px 10px; color: var(--fg); }
   table.stack td:nth-child(2)::before { content: "Что значит: "; color: var(--muted); }
   table.stack td:nth-child(3)::before { content: "Что делать: "; color: var(--muted); }
 }
-.task { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 0 10px 10px 0; padding: 12px 14px; margin: 0 0 12px; }
-.task > b { display: block; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
-.task details { margin-top: 8px; }
-.task summary { cursor: pointer; font-weight: 500; color: var(--accent); }
-.task details pre { margin-top: 8px; }
 
-.finish { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; border-top: 1px solid var(--line); margin-top: 28px; padding-top: 16px; }
-.finish label { display: flex; gap: 10px; align-items: center; font-weight: 600; cursor: pointer; }
-.finish input { width: 22px; height: 22px; accent-color: var(--accent); }
-.nav-btns { display: flex; gap: 8px; flex-wrap: wrap; }
-.btn { display: inline-block; text-decoration: none; font: inherit; font-size: 15px; font-weight: 500; border-radius: 8px; padding: 9px 14px; cursor: pointer; border: 1px solid var(--line); background: var(--surface); color: var(--fg); }
-.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+pre { background: var(--code-bg); color: var(--code-fg); font-family: var(--font-mono); font-size: 13px; line-height: 1.55; padding: 14px 16px; border-radius: 10px; overflow-x: auto; margin: 0 0 14px; }
+pre.full { max-height: 70vh; }
+code { font-family: var(--font-mono); font-size: .86em; }
+p code, li code, td code, .key code, .trap code, .check code, .goal code { background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+kbd { font-family: var(--font-mono); font-size: .82em; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--surface); }
 
-.flow { display: block; width: 100%; max-width: 420px; height: auto; margin: 0 auto 16px; }
-.flow .shape { fill: var(--surface); stroke: var(--fg); stroke-width: 1.5; }
-.flow .line { fill: none; stroke: var(--fg); stroke-width: 1.5; }
-.flow text { fill: var(--fg); font-family: var(--font-body); font-size: 13px; }
-.flow .lbl { font-size: 12px; fill: var(--muted); }
-.flow .arrow { fill: var(--fg); }
+.screen { display: grid; gap: 6px; margin: 0 0 16px; }
+.screen div { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font-size: 15px; }
+.screen b { font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
+.swatches { display: grid; gap: 8px; margin: 0 0 16px; }
+.swatch { border-radius: 8px; padding: 10px 14px; font-size: 15px; border: 1px solid var(--line); }
+.sw-green { background: #2E8B57; color: #fff; }
+.sw-blue { background: #ADD8E6; color: #0E2A36; }
+.sw-white { background: #fff; color: #17211C; }
+.sw-white s { color: #D0302B; }
 
 .er-box-wrap { overflow-x: auto; margin: 0 0 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
 svg.er { display: block; width: 760px; max-width: none; height: auto; }
@@ -153,19 +134,42 @@ svg.er { display: block; width: 760px; max-width: none; height: auto; }
 .er .er-fk { fill: var(--accent); font-weight: 600; }
 .er .er-type { fill: var(--muted); font-size: 10px; }
 .er .er-link { fill: none; stroke: var(--accent); stroke-width: 1.3; }
-.er .er-arrow { fill: var(--accent); }
 .legend { font-size: 14px; color: var(--muted); margin: 0 0 16px; }
-.screen { display: grid; gap: 6px; margin: 0 0 16px; }
-.screen div { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font-size: 15px; }
-.screen b { font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
 
-.deck { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
-.deck .count { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
-.deck .q { font-family: var(--font-display); font-size: 18px; line-height: 1.35; margin: 14px 0; min-height: 3.2em; text-wrap: balance; }
+.flow { display: block; width: 100%; max-width: 420px; height: auto; margin: 0 auto 16px; }
+.flow .shape { fill: var(--surface); stroke: var(--fg); stroke-width: 1.5; }
+.flow .line { fill: none; stroke: var(--fg); stroke-width: 1.5; }
+.flow text { fill: var(--fg); font-family: var(--font-body); font-size: 13px; }
+.flow .lbl { font-size: 12px; fill: var(--muted); }
+.flow .arrow { fill: var(--fg); }
+
+.finish { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; border-top: 1px solid var(--line); margin-top: 28px; padding-top: 16px; }
+.finish label { display: flex; gap: 10px; align-items: center; font-weight: 600; cursor: pointer; }
+.finish input { width: 22px; height: 22px; accent-color: var(--accent); }
+.nav-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { display: inline-block; text-decoration: none; font: inherit; font-size: 15px; font-weight: 500; border-radius: 8px; padding: 9px 14px; cursor: pointer; border: 1px solid var(--line); background: var(--surface); color: var(--fg); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+
+/* Проверка */
+.quiz, .deck { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+.quiz .top, .deck .count { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.quiz .q, .deck .q { font-family: var(--font-display); font-size: 17px; line-height: 1.35; margin: 14px 0 10px; text-wrap: balance; }
+.quiz .opts { display: grid; gap: 8px; margin: 0 0 12px; }
+.quiz .opt { text-align: left; font: inherit; font-size: 15px; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); cursor: pointer; }
+.quiz .opt.right { border-color: var(--ok); background: var(--accent-soft); }
+.quiz .opt.wrong { border-color: var(--bad); background: var(--bad-soft); }
+.quiz .opt:disabled { cursor: default; }
+.quiz .why { border-left: 3px solid var(--accent); padding: 6px 12px; margin: 0 0 12px; }
+.quiz .why.bad { border-left-color: var(--bad); }
+.quiz .result { font-family: var(--font-display); font-size: 22px; margin: 10px 0; }
+.quiz .mist { list-style: none; padding: 0; display: grid; gap: 8px; }
+.quiz .mist li { background: var(--bad-soft); border-radius: 8px; padding: 8px 12px; font-size: 15px; }
+.quiz .mist b { display: block; }
+.row-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.quiz button.b, .deck button, .quiz select, .deck select { font: inherit; font-size: 15px; border-radius: 8px; padding: 9px 12px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); cursor: pointer; }
+.quiz button.primary, .deck button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .deck .a { border-top: 1px dashed var(--line); padding-top: 12px; margin-bottom: 14px; white-space: pre-line; }
 .deck .btns { display: flex; flex-wrap: wrap; gap: 8px; }
-.deck button, .deck select { font: inherit; font-size: 15px; border-radius: 8px; padding: 9px 12px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); cursor: pointer; }
-.deck button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 a:focus-visible, button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .progress span { transition: none; } }
 </style>
@@ -175,7 +179,7 @@ a:focus-visible, button:focus-visible, summary:focus-visible, input:focus-visibl
 </svg>
 <div class="bar" id="bar" hidden>
   <div class="row">
-    <a href="#start" id="barHome">≡ Уроки</a>
+    <a href="#start">≡ Шаги</a>
     <span class="pos" id="barPos"></span>
     <a href="#" id="barNext">Дальше →</a>
   </div>
@@ -185,519 +189,780 @@ a:focus-visible, button:focus-visible, summary:focus-visible, input:focus-visibl
 
 <!-- ================= СТАРТ ================= -->
 <section id="start" class="lesson">
-  <div class="eyebrow">КОД 09.02.07-2-2026 · Программист</div>
-  <h1>Демоэкзамен с нуля</h1>
-  <p class="lead">Курс для тех, кто ничего не знает. Проходи уроки строго по порядку: каждый следующий опирается на предыдущий. Один урок — один вечер.</p>
+  <div class="eyebrow">КОД 09.02.07 · Программист</div>
+  <h1>Демоэкзамен: что делать по шагам</h1>
+  <p class="lead">Только то, что нужно сдать. Иди по шагам сверху вниз. После каждого шага пройди проверку.</p>
+  <h2>Что будет на экзамене</h2>
+  <ol class="flowline">
+    <li><span class="n">1</span><span><b>Excel</b><small>Дают папку с xls-файлами и картинками. Чистишь таблицы, сохраняешь в CSV UTF-8.</small></span></li>
+    <li><span class="n">2</span><span><b>DB Browser</b><small>Создаёшь таблицы, загружаешь CSV, раскладываешь данные по таблицам.</small></span></li>
+    <li><span class="n">3</span><span><b>DbVisualizer</b><small>Получаешь ER-схему, сохраняешь в PDF.</small></span></li>
+    <li><span class="n">4</span><span><b>Программа с нуля</b><small>Python + tkinter: вход, товары с картинками, поиск, форма, заказы.</small></span></li>
+    <li><span class="n">5</span><span><b>Сдача</b><small>Блок-схема, скриншоты в docx, всё в git.</small></span></li>
+  </ol>
   <div class="progress" aria-hidden="true"><span id="progressBar"></span></div>
-  <p class="lead" id="progressText">Пройдено уроков: 0</p>
+  <p class="lead" id="progressText">Пройдено: 0</p>
   <ol class="toc" id="toc"></ol>
-  <p><a class="btn" href="#cards">Карточки для заучивания</a> <a class="btn" href="#code">Полный код</a></p>
+  <p><a class="btn primary" href="#quiz">Проверка с разбором ошибок</a> <a class="btn" href="#cards">Карточки</a> <a class="btn" href="#code">Полный код</a></p>
 </section>
 
-<!-- ================= 0 ================= -->
-<section id="l0" class="lesson" hidden data-title="Как учиться по курсу" data-desc="План на 14 дней">
-  <div class="eyebrow">Урок 0</div>
-  <h1>Как учиться по этому курсу</h1>
-  <div class="goal"><b>Что узнаешь</b>Как устроен курс и сколько дней нужно, чтобы подготовиться.</div>
-  <div class="key"><b>Главное</b>На экзамене нельзя пользоваться ИИ, чатами и GitHub. Значит, к экзамену ты должен уметь набрать программу сам. Читать мало: нужно руками повторять код на компьютере, пока он не начнёт получаться без подсказок.</div>
-  <h2>Как работать с уроком</h2>
+<!-- ================= 0. КАК УЧИТЬ ================= -->
+<section id="s0" class="lesson" hidden data-title="Как учить" data-desc="План на 10 дней">
+  <div class="eyebrow">Шаг 0</div>
+  <h1>Как учить, чтобы сдать</h1>
+  <div class="key"><b>Главное правило</b>На экзамене нельзя ИИ, чаты, GitHub. Интернет — 15 минут. Значит, всё делаешь руками по памяти. Читать мало: нужно повторять на компьютере, пока не получится без подсказки.</div>
+  <h2>Как работать с каждым шагом</h2>
   <ol class="steps">
-    <li><div>Прочитай урок на телефоне (например, в дороге).</div></li>
-    <li><div>Вечером за компьютером повтори всё, что в уроке написано «сделай».</div></li>
-    <li><div>Ответь на вопросы «Проверь себя» в конце урока. Не получается — перечитай.</div></li>
-    <li><div>Отметь галочку «Урок пройден». Прогресс видно на главной.</div></li>
-    <li><div>Каждый день 10 минут гоняй карточки.</div></li>
+    <li><div><b>Прочитай</b> шаг на телефоне.</div></li>
+    <li><div><b>Сделай</b> на компьютере, подглядывая.</div></li>
+    <li><div><b>Пройди проверку</b> по этому шагу (кнопка «Проверка», выбери тему).</div></li>
+    <li><div><b>Сделай снова без подсказки</b> на следующий день. Не получилось — посмотри только то место, где застрял.</div></li>
   </ol>
-  <h2>План на 14 дней</h2>
+  <h2>Как учить код</h2>
+  <ul>
+    <li>Не учи весь файл. Учи <b>по этапам</b> (шаг 6): каждый этап — 20–60 строк.</li>
+    <li>Каждый день открывай <b>пустой файл</b> и пиши от начала до этапа, который учишь.</li>
+    <li>Запомни <b>смысл</b> куска («проверить пусто → ошибка → найти в базе»), а не буквы.</li>
+    <li>Ошибся — читай сообщение Python (шаг 7). Это тоже тренировка.</li>
+  </ul>
+  <h2>План на 10 дней</h2>
   <div class="table-box"><table>
     <thead><tr><th>День</th><th>Что делать</th></tr></thead>
     <tbody>
-      <tr><td>1</td><td>Уроки 0–2. Установить программы.</td></tr>
-      <tr><td>2–3</td><td>Урок 3: Python. Набрать все примеры руками.</td></tr>
-      <tr><td>4</td><td>Уроки 4–5: базы данных и SQL.</td></tr>
-      <tr><td>5</td><td>Урок 6: собрать базу из папки import самому.</td></tr>
-      <tr><td>6</td><td>Уроки 7–9: блок-схема, окна tkinter, ошибки.</td></tr>
-      <tr><td>7–8</td><td>Урок 10: окно входа и список товаров.</td></tr>
-      <tr><td>9–10</td><td>Урок 11: поиск, фильтр, форма товара.</td></tr>
-      <tr><td>11</td><td>Урок 12: заказы, exe, git.</td></tr>
-      <tr><td>12</td><td>Сделать всё заново на данных import2, подглядывая.</td></tr>
-      <tr><td>13</td><td>Пробный экзамен на время, без подсказок (урок 13).</td></tr>
-      <tr><td>14</td><td>Разобрать ошибки пробника, карточки.</td></tr>
+      <tr><td>1</td><td>Шаги 0–1: Excel → CSV по всем файлам.</td></tr>
+      <tr><td>2</td><td>Шаг 2: база в DB Browser целиком.</td></tr>
+      <tr><td>3</td><td>Шаг 3 DbVisualizer + повтор шагов 1–2 без подсказки.</td></tr>
+      <tr><td>4</td><td>Шаги 4–5: минимум Python и tkinter.</td></tr>
+      <tr><td>5</td><td>Шаг 6, этапы 1–3: вход и список товаров.</td></tr>
+      <tr><td>6</td><td>Этапы 4–5: картинки, цвета, поиск, фильтр.</td></tr>
+      <tr><td>7</td><td>Этапы 6–7: форма товара, удаление.</td></tr>
+      <tr><td>8</td><td>Этап 8 заказы + шаг 8 (документы, git).</td></tr>
+      <tr><td>9</td><td>Всё с нуля на папке import2 с подсказками.</td></tr>
+      <tr><td>10</td><td>Пробный экзамен на время без подсказок (шаг 9).</td></tr>
     </tbody>
   </table></div>
-  <p>Если до экзамена меньше времени — делай по два урока в день, но не пропускай уроки 6, 10 и 11: за них больше всего баллов.</p>
+  <p>Мало времени? Не пропускай шаги 1, 2 и 6: за них больше всего баллов.</p>
 </section>
 
-<!-- ================= 1 ================= -->
-<section id="l1" class="lesson" hidden data-title="Что за экзамен" data-desc="Модули, время, баллы">
-  <div class="eyebrow">Урок 1</div>
-  <h1>Что за экзамен</h1>
-  <div class="goal"><b>Что узнаешь</b>Что нужно сделать на экзамене, сколько на это времени и за что дают баллы.</div>
-  <p>Тебе дают задание: <b>компания продаёт обувь</b>, ей нужна программа. В программе есть база данных с товарами, пользователями и заказами, а также окна, где эти данные видно и можно менять. К заданию прилагаются файлы с данными (папка <code>import</code>): таблицы Excel, фото товаров, иконка и картинка-заглушка.</p>
-  <h2>Уровни</h2>
-  <div class="table-box"><table>
-    <thead><tr><th>Уровень</th><th>Время</th><th>Модули</th><th>Баллы</th></tr></thead>
-    <tbody>
-      <tr><td>ПА (промежуточная)</td><td>1 ч 30 мин</td><td>1, 2</td><td>25</td></tr>
-      <tr><td>ГИА базовый</td><td>3 ч</td><td>1, 2, 3</td><td>50</td></tr>
-      <tr><td>ГИА профильный</td><td>4 ч</td><td>1, 2, 3, 4</td><td>75 (+25 от колледжа)</td></tr>
-    </tbody>
-  </table></div>
-  <h2>Модули</h2>
-  <div class="table-box"><table>
-    <thead><tr><th>Модуль</th><th>Что делать</th><th>Время</th></tr></thead>
-    <tbody>
-      <tr><td>1</td><td>База данных, ER-диаграмма в PDF, скрипт БД</td><td>50 мин</td></tr>
-      <tr><td>2</td><td>Блок-схема, окно входа, список товаров, скриншоты в docx</td><td>40 мин</td></tr>
-      <tr><td>3</td><td>Поиск, фильтр, сортировка, форма товара, удаление</td><td>1 ч 30 мин</td></tr>
-      <tr><td>4</td><td>Заказы, загрузка в git</td><td>1 ч</td></tr>
-    </tbody>
-  </table></div>
-  <h2>Как ставят баллы</h2>
-  <p>Каждое требование — отдельная проверка: <b>2 балла</b> сделано полностью, <b>1 балл</b> сделано с ошибками, <b>0</b> не сделано. Поэтому выгодно сделать <b>всё понемногу</b>, чем одно идеально.</p>
-  <h2>Роли в программе</h2>
-  <div class="table-box"><table>
-    <thead><tr><th>Кто</th><th>Что может</th></tr></thead>
-    <tbody>
-      <tr><td>Гость</td><td>Смотреть товары</td></tr>
-      <tr><td>Авторизированный клиент</td><td>Смотреть товары</td></tr>
-      <tr><td>Менеджер</td><td>Товары с поиском, фильтром, сортировкой; смотреть заказы</td></tr>
-      <tr><td>Администратор</td><td>Всё, что менеджер, плюс добавлять, менять и удалять товары и заказы</td></tr>
-    </tbody>
-  </table></div>
-  <div class="trap"><b>Интернет</b>Только 15 минут на общем компьютере, без входа на сайты. Нельзя: ИИ, мессенджеры, GitHub, StackOverflow, соцсети. За экраном следят удалённо.</div>
-  <h2>Проверь себя</h2>
-  <details class="q"><summary>Сколько модулей на базовом уровне и сколько времени?</summary><div>Три модуля (1, 2, 3), 3 часа.</div></details>
-  <details class="q"><summary>Кто может удалять товары?</summary><div>Только администратор.</div></details>
-  <details class="q"><summary>Что выгоднее: сделать одно требование идеально или все требования хоть как-то?</summary><div>Все хоть как-то: за частично сделанное дают 1 балл, за несделанное 0.</div></details>
-</section>
+<!-- ================= 1. EXCEL ================= -->
+<section id="s1" class="lesson" hidden data-title="Excel → CSV UTF-8" data-desc="Что поправить в таблицах">
+  <div class="eyebrow">Шаг 1 · Модуль 1</div>
+  <h1>Excel → CSV UTF-8</h1>
+  <div class="goal"><b>Результат</b>5 файлов CSV: <code>users.csv</code>, <code>pvz.csv</code>, <code>tovar.csv</code>, <code>zakaz.csv</code>, <code>zakaz_tovar.csv</code>. Русские буквы читаются, заголовки латиницей, ошибки исправлены.</div>
+  <p>Зачем вообще чистить: DB Browser загружает CSV как есть. Любая грязь (пробел в конце, пустая строка, дата в разном виде) потом ломает связи между таблицами.</p>
 
-<!-- ================= 2 ================= -->
-<section id="l2" class="lesson" hidden data-title="Программы на компьютере" data-desc="Что установить и зачем">
-  <div class="eyebrow">Урок 2</div>
-  <h1>Программы, которые понадобятся</h1>
-  <div class="goal"><b>Что узнаешь</b>Какие программы нужны и для чего каждая.</div>
-  <div class="table-box"><table>
-    <thead><tr><th>Программа</th><th>Зачем</th></tr></thead>
-    <tbody>
-      <tr><td><b>Python</b> + библиотека Pillow</td><td>Язык, на котором пишем программу. Pillow — для картинок.</td></tr>
-      <tr><td><b>VS Code</b> или IDLE</td><td>Редактор, где набираешь код и запускаешь его.</td></tr>
-      <tr><td><b>Excel</b></td><td>Открыть файлы import, поправить, сохранить как CSV.</td></tr>
-      <tr><td><b>DB Browser for SQLite</b></td><td>Создать базу, выполнить SQL, импортировать CSV.</td></tr>
-      <tr><td><b>DbVisualizer</b></td><td>Нарисовать ER-диаграмму (схема со стрелками).</td></tr>
-      <tr><td><b>draw.io</b></td><td>Нарисовать блок-схему по ГОСТ.</td></tr>
-      <tr><td><b>Word</b></td><td>Документ со скриншотами, сохранение в PDF.</td></tr>
-      <tr><td><b>GitHub Desktop</b> / git</td><td>Загрузить результат в репозиторий (модуль 4).</td></tr>
-    </tbody>
-  </table></div>
-  <h2>Сделай</h2>
+  <h2>1.1 Общие правила для каждого файла</h2>
   <ol class="steps">
-    <li><div>Открой командную строку: <kbd>Win</kbd>+<kbd>R</kbd>, введи <code>cmd</code>, <kbd>Enter</kbd>.</div></li>
-    <li><div>Проверь Python: <code>python --version</code>. Должно показать версию, например Python 3.12.</div></li>
-    <li><div>Поставь Pillow: <code>pip install pillow</code>.</div></li>
-    <li><div>Создай на рабочем столе папку <code>shop</code> и скопируй туда папку <code>import</code> с данными.</div></li>
+    <li><div>Открой файл (.xls или .xlsx) в Excel. Если сверху жёлтая полоса — «Разрешить редактирование».</div></li>
+    <li><div><b>Заголовки латиницей</b>, маленькими буквами, без пробелов: <code>art</code>, <code>name</code>… Так SQL пишется без кавычек.</div></li>
+    <li><div><b>Удали пустые столбцы и строки</b> справа и снизу (выдели → правой кнопкой → «Удалить»).</div></li>
+    <li><div><b>Убери лишние пробелы.</b> Пробел в конце глазом не видно. Формула <code>=СЖПРОБЕЛЫ(A2)</code> в соседнем столбце убирает лишние пробелы; потом скопируй → «Вставить значения» поверх старого столбца.</div></li>
+    <li><div><b>Даты</b> — формат <code>ГГГГ-ММ-ДД</code>: выдели столбец → правой кнопкой «Формат ячеек» → «(все форматы)» → впиши <code>ГГГГ-ММ-ДД</code>.</div></li>
+    <li><div><b>Ищи ошибки в данных</b> (их кладут специально): несуществующая дата, опечатка в имени, дата заказа позже даты доставки. Исправь и запиши, что исправил, — потом в отчёт.</div></li>
+    <li><div><b>Сохрани</b>: «Файл» → «Сохранить как» → тип <b>CSV UTF-8 (разделитель — запятая)</b>. На вопрос про несколько листов — сохраняй каждый лист отдельно.</div></li>
   </ol>
-  <div class="key"><b>Как запускать программу</b>В командной строке перейди в папку: <code>cd Desktop\shop</code>, потом <code>python shop_app.py</code>. В VS Code: открой папку (File → Open Folder) и нажми ▶ справа сверху.</div>
-  <h2>Проверь себя</h2>
-  <details class="q"><summary>В какой программе рисуют ER-диаграмму?</summary><div>DbVisualizer (схема таблиц со связями).</div></details>
-  <details class="q"><summary>Зачем Pillow?</summary><div>Чтобы открывать jpg-фото, менять их размер и показывать в окне tkinter.</div></details>
-</section>
+  <div class="trap"><b>Только CSV UTF-8</b>Обычный «CSV (разделители — запятые)» сохраняет в старой кодировке. В базе вместо русских букв будут знаки вопроса.</div>
 
-<!-- ================= 3 ================= -->
-<section id="l3" class="lesson" hidden data-title="Python с нуля" data-desc="Только то, что нужно на экзамене">
-  <div class="eyebrow">Урок 3</div>
-  <h1>Python с нуля</h1>
-  <div class="goal"><b>Что узнаешь</b>Переменные, строки, списки, словари, условия, циклы, функции, ошибки и классы. Ровно то, что встретится в программе.</div>
-  <p>Создай файл <code>test.py</code>, набирай примеры по одному и запускай. Не копируй — набирай: так запоминается.</p>
-
-  <h2>1. Вывод и переменные</h2>
-<pre>print("Привет")          # вывести текст
-name = "Kari"            # переменная: коробка с именем name
-price = 4990             # целое число (int)
-discount = 3.5           # дробное число (float), через точку
-in_stock = True          # да/нет (bool): True или False
-print(name, price)</pre>
-  <p>Знак <code>=</code> значит «положи значение в переменную». Текст после <code>#</code> — комментарий, Python его не выполняет.</p>
-
-  <h2>2. Строки и f-строки</h2>
-<pre>fio = "Иванов Иван"
-print(f"Пользователь: {fio}")     # подставить переменную в текст
-print(f"Цена: {4990.5:.2f} ₽")    # .2f — два знака после точки: 4990.50
-login = "  admin  ".strip()      # strip() убирает пробелы по краям
-print("Kari".lower())            # kari — маленькими буквами</pre>
-
-  <h2>3. Числа из текста</h2>
-<pre>text = "15"
-number = int(text)        # "15" → 15
-price = float("1999.99")  # "1999.99" → 1999.99
-price = float("19,5".replace(",", "."))  # запятую меняем на точку</pre>
-  <div class="trap"><b>Ловушка</b><code>int("abc")</code> вызывает ошибку <code>ValueError</code>. Поэтому всё, что ввёл пользователь, переводят в число внутри <code>try</code> (пункт 8).</div>
-
-  <h2>4. Условия if</h2>
-<pre>discount = 20
-if discount > 15:
-    print("Большая скидка")
-elif discount > 0:
-    print("Есть скидка")
-else:
-    print("Без скидки")</pre>
-  <p>Отступ (4 пробела) показывает, что строка внутри <code>if</code>. Сравнения: <code>==</code> равно, <code>!=</code> не равно, <code>&gt;</code>, <code>&lt;</code>, <code>&gt;=</code>, <code>&lt;=</code>. Связки: <code>and</code>, <code>or</code>, <code>not</code>.</p>
-
-  <h2>5. Списки и цикл for</h2>
-<pre>suppliers = ["Kari", "Обувь для вас"]   # список
-suppliers.append("Rieker")              # добавить в конец
-print(suppliers[0])                     # первый элемент — номер 0
-print(len(suppliers))                   # сколько элементов: 3
-
-for supplier in suppliers:              # перебрать по одному
-    print(supplier)
-
-big = [p for p in [5, 20, 0, 16] if p > 15]   # отбор: [20, 16]</pre>
-
-  <h2>6. Словари</h2>
-<pre>product = {"name": "Ботинки", "price": 4990}
-print(product["name"])        # значение по ключу
-product["price"] = 4500       # изменить
-categories = {"Женская обувь": 1, "Мужская обувь": 2}
-print(categories["Мужская обувь"])   # 2 — так находим id по названию</pre>
-
-  <h2>7. Функции</h2>
-<pre>def final_price(price, discount):
-    return price * (100 - discount) / 100
-
-print(final_price(1000, 15))   # 850.0</pre>
-  <p><code>def</code> создаёт функцию, <code>return</code> возвращает результат. В tkinter функции вызываются по нажатию кнопок.</p>
-
-  <h2>8. Ошибки: try / except</h2>
-<pre>try:
-    quant = int(input("Количество: "))
-except ValueError:
-    print("Нужно целое число")</pre>
-  <p>Если внутри <code>try</code> случилась ошибка, программа не падает, а выполняет <code>except</code>. На экзамене за падение программы снимают баллы.</p>
-
-  <h2>9. Классы и self</h2>
-<pre>class Counter:
-    def __init__(self):        # выполняется при создании
-        self.value = 0         # self.value — «память» объекта
-
-    def add(self):
-        self.value += 1
-
-counter = Counter()
-counter.add()
-print(counter.value)           # 1</pre>
-  <p>Вся наша программа — один класс <code>ShopApp</code>. Всё, что нужно помнить между экранами (кто вошёл, его роль), хранится в <code>self</code>.</p>
-
-  <h2>10. Имена</h2>
-  <div class="key"><b>Требование экзамена</b>В Python имена пишут в стиле <code>snake_case</code>: маленькими буквами через подчёркивание — <code>user_fio</code>, <code>show_products</code>. Имена классов — с большой буквы: <code>ShopApp</code>. Одна команда на строку.</div>
-
-  <h2>Задания</h2>
-  <p>Сначала попробуй сам, ответ открывай только потом.</p>
-  <div class="task"><b>Задание 1</b>Напиши функцию <code>price_text(price, discount)</code>. Со скидкой она возвращает «Цена: 4990.00 ₽ → 4840.30 ₽», без скидки — «Цена: 2700.00 ₽». Проверь на <code>price_text(4990, 3)</code> и <code>price_text(2700, 0)</code>.
-    <details><summary>Показать ответ</summary>
-<pre>def price_text(price, discount):
-    if discount &gt; 0:
-        final = price * (100 - discount) / 100
-        return f"Цена: {price:.2f} ₽ → {final:.2f} ₽"
-    return f"Цена: {price:.2f} ₽"
-
-print(price_text(4990, 3))   # Цена: 4990.00 ₽ → 4840.30 ₽
-print(price_text(2700, 0))   # Цена: 2700.00 ₽</pre></details></div>
-  <div class="task"><b>Задание 2</b>Дан список остатков <code>quants = [6, 13, 0, 8, 0, 5]</code>. Посчитай циклом, сколько товаров нет на складе. Должно получиться 2.
-    <details><summary>Показать ответ</summary>
-<pre>quants = [6, 13, 0, 8, 0, 5]
-empty = 0
-for quant in quants:
-    if quant == 0:
-        empty += 1
-print(empty)   # 2</pre></details></div>
-  <div class="task"><b>Задание 3</b>Спроси количество через <code>input()</code>. Если ввели не целое число — напиши «Введите целое число, например 5.», если меньше 0 — «Количество не может быть отрицательным.», иначе «Принято: 5».
-    <details><summary>Показать ответ</summary>
-<pre>try:
-    quant = int(input("Количество: "))
-    if quant &lt; 0:
-        print("Количество не может быть отрицательным.")
-    else:
-        print("Принято:", quant)
-except ValueError:
-    print("Введите целое число, например 5.")</pre></details></div>
-
-  <h2>Проверь себя</h2>
-  <details class="q"><summary>Как вывести цену с двумя знаками после точки?</summary><div><code>f"{price:.2f}"</code></div></details>
-  <details class="q"><summary>Что будет, если сделать int("abc")?</summary><div>Ошибка ValueError. Ловим её через try / except.</div></details>
-  <details class="q"><summary>Какой номер у первого элемента списка?</summary><div>0.</div></details>
-  <details class="q"><summary>Зачем self в классе?</summary><div>Чтобы хранить данные объекта между вызовами функций (методов).</div></details>
-</section>
-
-<!-- ================= 4 ================= -->
-<section id="l4" class="lesson" hidden data-title="Базы данных простыми словами" data-desc="Таблицы, ключи, связи, 3НФ">
-  <div class="eyebrow">Урок 4</div>
-  <h1>Базы данных простыми словами</h1>
-  <div class="goal"><b>Что узнаешь</b>Что такое таблица, первичный и внешний ключ, связи и третья нормальная форма.</div>
-  <h2>Таблица</h2>
-  <p>База данных — это несколько таблиц, как листы в Excel. Строка — одна запись (один товар). Столбец — поле (цена, название). У каждой строки есть номер <code>id</code>.</p>
-  <h2>Первичный ключ (PK)</h2>
-  <p>Поле, по которому строку можно найти однозначно. Он не повторяется и не бывает пустым. Почти всегда это <code>id</code>, который база ставит сама.</p>
-  <h2>Внешний ключ (FK)</h2>
-  <p>Поле, в котором записан <code>id</code> строки из <b>другой</b> таблицы. Пример: в таблице <code>users</code> поле <code>role_id = 2</code>, а в таблице <code>role</code> под номером 2 записано «Менеджер». На ER-диаграмме внешний ключ — это стрелка между таблицами.</p>
-  <h2>Почему не писать всё в одну таблицу</h2>
-  <p>В Excel у каждого товара написан поставщик словами: «Kari», «Kari», «Kari»… Если кто-то опечатается («Каri» с русской а), программа решит, что это другой поставщик. Поэтому поставщиков выносят в отдельную таблицу <code>suppl</code>, где «Kari» записан один раз, а у товара хранится только номер.</p>
-  <div class="key"><b>3-я нормальная форма (3НФ) простыми словами</b>Один факт хранится в одном месте. Всё, что повторяется (роль, поставщик, производитель, категория, статус, пункт выдачи), выносим в отдельную таблицу-справочник. В основной таблице оставляем только номер.</div>
-  <h2>Виды связей</h2>
-  <ul>
-    <li><b>Один ко многим:</b> одна роль — много пользователей. Внешний ключ ставится на стороне «многих» (в <code>users</code>).</li>
-    <li><b>Многие ко многим:</b> в заказе много товаров, а товар бывает во многих заказах. Нужна промежуточная таблица <code>zakaz_tovar</code> (номер заказа, номер товара, количество).</li>
-  </ul>
-  <h2>Наша база: 10 таблиц</h2>
+  <h2>1.2 Что менять в каждом файле</h2>
   <div class="table-box"><table>
-    <thead><tr><th>Таблица</th><th>Что в ней</th><th>Ссылки (FK)</th></tr></thead>
+    <thead><tr><th>Файл</th><th>Что сделать</th></tr></thead>
     <tbody>
-      <tr><td><code>role</code></td><td>роли пользователей</td><td>—</td></tr>
-      <tr><td><code>users</code></td><td>ФИО, логин, пароль</td><td>role</td></tr>
-      <tr><td><code>suppl</code></td><td>поставщики</td><td>—</td></tr>
-      <tr><td><code>manuf</code></td><td>производители</td><td>—</td></tr>
-      <tr><td><code>cat</code></td><td>категории</td><td>—</td></tr>
-      <tr><td><code>tovar</code></td><td>товары</td><td>suppl, manuf, cat</td></tr>
-      <tr><td><code>pvz</code></td><td>адреса пунктов выдачи</td><td>—</td></tr>
-      <tr><td><code>status</code></td><td>статусы заказов</td><td>—</td></tr>
-      <tr><td><code>zakaz</code></td><td>заказы: даты, код</td><td>pvz, users, status</td></tr>
-      <tr><td><code>zakaz_tovar</code></td><td>состав заказа</td><td>zakaz, tovar</td></tr>
+      <tr><td>user_import</td><td>Заголовки: <code>role, fio, login, pass</code>.</td></tr>
+      <tr><td>Пункты выдачи</td><td>Заголовка нет. Вставь строку сверху, в A1 напиши <code>addr</code>. Номер строки = номер пункта (1, 2, 3…): заказы ссылаются на этот номер, порядок строк не меняй.</td></tr>
+      <tr><td>Tovar</td><td>Заголовки: <code>art, name, unit, price, suppl, manuf, cat, discount, quant, descr, photo</code>. Цена — число без «руб». Пустое фото оставь пустым.</td></tr>
+      <tr><td>Заказ</td><td>Заголовки: <code>num, items, zak_date, dost_date, pvz, fio, code, status</code>. Пустые столбцы справа удали. Даты в <code>ГГГГ-ММ-ДД</code>. Ошибку <b>30.02.2025</b> исправь (например, <code>2025-02-28</code>). У «Новый » убери пробел в конце.</td></tr>
     </tbody>
   </table></div>
-  <p>Всего 9 связей (стрелок). Именно эта схема была на доске в классе — вот она:</p>
-  <div class="er-box-wrap"><!--RAW:er_diagram.svg--></div>
-  <p class="legend">Подчёркнуто — первичный ключ (id). Зелёным — внешние ключи, от них идут стрелки. Прокрути схему вбок.</p>
-  <h2>Проверь себя</h2>
-  <details class="q"><summary>Что такое внешний ключ?</summary><div>Поле с id строки из другой таблицы, например users.role_id → role.id.</div></details>
-  <details class="q"><summary>Зачем нужна таблица zakaz_tovar?</summary><div>Для связи «многие ко многим» между заказами и товарами.</div></details>
-  <details class="q"><summary>Какие справочники вынесены из товаров?</summary><div>Поставщики (suppl), производители (manuf), категории (cat).</div></details>
+
+  <h2>1.3 Состав заказа — отдельный лист</h2>
+  <p>В столбце items в одной ячейке несколько товаров: <code>А112Т4, 2, F635R4, 2</code>. Это «артикул, количество, артикул, количество». Для базы так нельзя: одно значение — одна ячейка.</p>
+  <ol class="steps">
+    <li><div>Создай новый лист, заголовки: <code>zak_id, art, quant</code>.</div></li>
+    <li><div>Для каждого заказа запиши его товары по строкам:</div></li>
+  </ol>
+  <div class="table-box"><table>
+    <thead><tr><th>zak_id</th><th>art</th><th>quant</th></tr></thead>
+    <tbody><tr><td>1</td><td>А112Т4</td><td>2</td></tr><tr><td>1</td><td>F635R4</td><td>2</td></tr><tr><td>2</td><td>H782T5</td><td>1</td></tr><tr><td>2</td><td>G783F5</td><td>1</td></tr><tr><td>…</td><td>…</td><td>…</td></tr></tbody>
+  </table></div>
+  <p>Ускорить: скопируй столбец items на новый лист → «Данные» → «Текст по столбцам» → разделитель «запятая». Дальше переставь руками. 10 заказов → 20 строк.</p>
+  <div class="trap"><b>Буквы в артикулах</b>Первая буква в <code>А112Т4</code> — русская «А». Не перепечатывай артикулы руками — копируй. Иначе товар не найдётся при переносе.</div>
+
+  <div class="check"><b>Проверь себя</b>Открой каждый CSV в Блокноте (правой кнопкой → «Открыть с помощью» → Блокнот). Русские буквы читаются, первая строка — латинские заголовки, разделитель везде один (<code>,</code> или <code>;</code>).</div>
 </section>
 
-<!-- ================= 5 ================= -->
-<section id="l5" class="lesson" hidden data-title="SQL: язык запросов" data-desc="CREATE, INSERT, SELECT, JOIN">
-  <div class="eyebrow">Урок 5</div>
-  <h1>SQL: язык запросов к базе</h1>
-  <div class="goal"><b>Что узнаешь</b>Как создать таблицу, добавить, найти, изменить и удалить данные.</div>
-  <p>Тренируйся в DB Browser for SQLite: вкладка «Выполнить SQL», пишешь запрос и нажимаешь ▶ (или <kbd>Ctrl</kbd>+<kbd>Enter</kbd>).</p>
-  <h2>CREATE TABLE — создать таблицу</h2>
-<pre>CREATE TABLE role (
-    id   INTEGER PRIMARY KEY AUTOINCREMENT,
-    role TEXT NOT NULL UNIQUE
-);
+<!-- ================= 2. DB BROWSER ================= -->
+<section id="s2" class="lesson" hidden data-title="DB Browser: база" data-desc="Таблицы, импорт, перенос, скрипт">
+  <div class="eyebrow">Шаг 2 · Модуль 1</div>
+  <h1>DB Browser: собрать базу</h1>
+  <div class="goal"><b>Результат</b>Файл <code>shop.db</code> с 10 таблицами и данными + скрипт <code>shop_script.sql</code>.</div>
 
-CREATE TABLE users (
-    id      INTEGER PRIMARY KEY AUTOINCREMENT,
-    role_id INTEGER NOT NULL REFERENCES role(id),
-    fio     TEXT NOT NULL,
-    login   TEXT NOT NULL UNIQUE,
-    pass    TEXT NOT NULL
-);</pre>
+  <h2>2.1 Что надо понимать (5 минут)</h2>
+  <ul>
+    <li><b>Таблица</b> — как лист Excel. Строка — запись (один товар), столбец — поле (цена).</li>
+    <li><b>Первичный ключ</b> (<code>PRIMARY KEY</code>) — номер строки <code>id</code>. Не повторяется, ставится сам (<code>AUTOINCREMENT</code>).</li>
+    <li><b>Внешний ключ</b> (<code>REFERENCES</code>) — поле, где лежит <code>id</code> из другой таблицы. В товаре хранится не «Kari», а номер поставщика.</li>
+    <li><b>3-я нормальная форма</b> — всё, что повторяется (роль, поставщик, производитель, категория, статус, пункт выдачи), выносим в отдельную маленькую таблицу-справочник.</li>
+    <li><b>Многие ко многим</b> — в заказе много товаров, товар во многих заказах. Нужна таблица-связка <code>zakaz_tovar</code>.</li>
+  </ul>
+  <div class="er-box-wrap"><!--RAW:er_diagram.svg--></div>
+  <p class="legend">Наша база: 10 таблиц, 9 связей. Подчёркнуто — первичный ключ, зелёным — внешний ключ. Прокрути схему вбок.</p>
+
+  <h2>2.2 Создать базу и таблицы</h2>
+  <ol class="steps">
+    <li><div>DB Browser → «Новая база данных» → сохрани <code>shop.db</code> в папку проекта. Окно «Изменить определение таблицы» закрой кнопкой «Отмена».</div></li>
+    <li><div>Вкладка <b>«Выполнить SQL»</b> → вставь скрипт ниже → ▶ (<kbd>Ctrl</kbd>+<kbd>Enter</kbd>).</div></li>
+    <li><div><b>«Записать изменения»</b> (<kbd>Ctrl</kbd>+<kbd>S</kbd>). Без этого всё пропадёт.</div></li>
+  </ol>
+  <p>Скрипт таблиц. Учи его: на экзамене пишешь сам. Он из 10 одинаковых по устройству блоков.</p>
+<pre class="full"><!--INCLUDE:schema.sql--></pre>
   <div class="table-box"><table>
     <thead><tr><th>Слово</th><th>Значит</th></tr></thead>
     <tbody>
-      <tr><td><code>INTEGER</code> / <code>REAL</code> / <code>TEXT</code></td><td>целое число / дробное / текст</td></tr>
-      <tr><td><code>PRIMARY KEY</code></td><td>первичный ключ</td></tr>
-      <tr><td><code>AUTOINCREMENT</code></td><td>номер ставится сам: 1, 2, 3…</td></tr>
+      <tr><td><code>INTEGER</code> / <code>REAL</code> / <code>TEXT</code></td><td>целое / дробное / текст</td></tr>
+      <tr><td><code>PRIMARY KEY AUTOINCREMENT</code></td><td>первичный ключ, номер ставится сам</td></tr>
       <tr><td><code>NOT NULL</code></td><td>поле обязательно</td></tr>
-      <tr><td><code>UNIQUE</code></td><td>повторы запрещены</td></tr>
+      <tr><td><code>UNIQUE</code></td><td>без повторов</td></tr>
       <tr><td><code>REFERENCES role(id)</code></td><td>внешний ключ на таблицу role</td></tr>
       <tr><td><code>CHECK (price &gt;= 0)</code></td><td>проверка значения</td></tr>
-      <tr><td><code>DEFAULT 0</code></td><td>значение по умолчанию</td></tr>
+      <tr><td><code>DEFAULT 0</code></td><td>значение, если не указали</td></tr>
+      <tr><td><code>ON DELETE CASCADE</code></td><td>удалил заказ — удалился его состав</td></tr>
     </tbody>
   </table></div>
-  <h2>INSERT — добавить</h2>
-<pre>INSERT INTO role (role) VALUES ('Администратор');
-INSERT INTO users (role_id, fio, login, pass)
-VALUES (1, 'Иванов Иван Иванович', 'ivan@mail.ru', '123');</pre>
-  <h2>SELECT — найти</h2>
-<pre>SELECT * FROM users;                       -- все поля всех строк
-SELECT fio, login FROM users WHERE role_id = 1;
-SELECT * FROM tovar WHERE name LIKE '%бот%';    -- содержит «бот»
-SELECT * FROM tovar ORDER BY quant DESC;        -- по убыванию
-SELECT COUNT(*) FROM tovar;                     -- сколько строк</pre>
-  <h2>JOIN — соединить таблицы</h2>
-<pre>SELECT users.fio, role.role
-FROM users
-JOIN role ON role.id = users.role_id;</pre>
-  <p>Читается так: «возьми пользователей, к каждому приклей строку из role, у которой id равен role_id пользователя». Так вместо цифры 2 получаем слово «Менеджер».</p>
-  <h2>INSERT … SELECT — перенести данные из одной таблицы в другую</h2>
-<pre>INSERT INTO suppl (suppl)
-SELECT DISTINCT suppl FROM imp_tovar;</pre>
-  <p><code>DISTINCT</code> — без повторов. Этим мы будем переносить данные из Excel в справочники (урок 6).</p>
-  <h2>UPDATE и DELETE — изменить и удалить</h2>
-<pre>UPDATE tovar SET quant = 10 WHERE id = 3;
-DELETE FROM tovar WHERE id = 3;</pre>
-  <div class="trap"><b>Опасно</b><code>UPDATE</code> и <code>DELETE</code> без <code>WHERE</code> меняют или удаляют <b>все</b> строки таблицы.</div>
-  <h2>Задания</h2>
-  <p>Открой готовую <code>shop.db</code> в DB Browser → «Выполнить SQL». Рядом с каждым заданием — что должно получиться.</p>
-  <div class="task"><b>Задание 1</b>Товары производителя Kari, которых на складе больше 10. Должно быть 2 строки: Туфли (15) и Полуботинки (14).
-    <details><summary>Показать ответ</summary>
-<pre>SELECT tovar.name, tovar.quant
-FROM tovar
-JOIN manuf ON manuf.id = tovar.manuf
-WHERE manuf.manuf = 'Kari' AND tovar.quant &gt; 10;</pre>
-    <p>Производитель хранится номером, поэтому сначала JOIN со справочником manuf, потом условие по названию.</p></details></div>
-  <div class="task"><b>Задание 2</b>Сколько товаров у каждого поставщика? Должно быть: Kari — 16, Обувь для вас — 14. Подсказка: <code>GROUP BY</code>.
-    <details><summary>Показать ответ</summary>
-<pre>SELECT suppl.suppl, COUNT(*)
-FROM tovar
-JOIN suppl ON suppl.id = tovar.suppl
-GROUP BY suppl.suppl;</pre>
-    <p><code>GROUP BY</code> собирает строки в группы с одинаковым значением, а <code>COUNT(*)</code> считает строки в каждой группе.</p></details></div>
-  <div class="task"><b>Задание 3</b>Все заказы клиента «Степанов Михаил Артёмович»: номер, дата заказа, адрес пункта выдачи. Должно быть 4 заказа (1, 5, 9, 10).
-    <details><summary>Показать ответ</summary>
-<pre>SELECT zakaz.id, zakaz.zak_date, pvz.addr
-FROM zakaz
-JOIN users ON users.id = zakaz.user_id
-JOIN pvz ON pvz.id = zakaz.pvz_id
-WHERE users.fio = 'Степанов Михаил Артёмович';</pre></details></div>
-  <div class="task"><b>Задание 4</b>Товары, которых нет ни в одном заказе. Только их разрешено удалять. Среди них: S634B5 Кеды, K345R4 Полуботинки.
-    <details><summary>Показать ответ</summary>
-<pre>SELECT art, name
-FROM tovar
-WHERE id NOT IN (SELECT tovar_id FROM zakaz_tovar);</pre>
-    <p>Запрос в скобках — список id товаров из заказов. <code>NOT IN</code> оставляет товары, которых в этом списке нет.</p></details></div>
 
-  <h2>Проверь себя</h2>
-  <details class="q"><summary>Как выбрать товары, где в названии есть «туф»?</summary><div><code>SELECT * FROM tovar WHERE name LIKE '%туф%';</code></div></details>
-  <details class="q"><summary>Как отсортировать по возрастанию количества?</summary><div><code>ORDER BY quant ASC</code> (или просто <code>ORDER BY quant</code>).</div></details>
-  <details class="q"><summary>Что делает DISTINCT?</summary><div>Убирает повторяющиеся строки из результата.</div></details>
-</section>
-
-<!-- ================= 6 ================= -->
-<section id="l6" class="lesson" hidden data-title="Модуль 1: база данных" data-desc="Excel → CSV → DB Browser → ER → скрипт">
-  <div class="eyebrow">Урок 6 · Модуль 1 · 50 минут</div>
-  <h1>Модуль 1: база данных шаг за шагом</h1>
-  <div class="goal"><b>Что сдать</b>Файл базы <code>shop.db</code>, ER-диаграмму в PDF, скрипт базы <code>.sql</code>.</div>
-
-  <h2>Шаг 1. Подготовить Excel-файлы</h2>
-  <p>Открой каждый файл из <code>import</code>. Переименуй заголовки столбцов латиницей: так SQL проще писать.</p>
-  <div class="table-box"><table>
-    <thead><tr><th>Файл</th><th>Заголовки</th></tr></thead>
-    <tbody>
-      <tr><td>user_import</td><td><code>role, fio, login, pass</code></td></tr>
-      <tr><td>Пункты выдачи</td><td>заголовка нет: вставь строку сверху и напиши <code>addr</code></td></tr>
-      <tr><td>Tovar</td><td><code>art, name, unit, price, suppl, manuf, cat, discount, quant, descr, photo</code></td></tr>
-      <tr><td>Заказ</td><td><code>num, items, zak_date, dost_date, pvz, fio, code, status</code> (пустые столбцы справа удалить)</td></tr>
-    </tbody>
-  </table></div>
-  <p>Ещё в файле заказов:</p>
-  <ul>
-    <li>Выдели столбцы с датами → правой кнопкой «Формат ячеек» → «(все форматы)» → впиши <code>ГГГГ-ММ-ДД</code>.</li>
-    <li>Найди ошибку: дата <b>30.02.2025</b> (такого дня нет). Исправь на настоящую, например <code>2025-02-28</code>, и запиши это в отчёт.</li>
-    <li>В статусе «Новый » есть лишний пробел. Его уберёт <code>TRIM</code> в SQL, но лучше удалить и в Excel.</li>
-  </ul>
-  <h3>Состав заказов — отдельный лист</h3>
-  <p>В столбце items записано так: <code>А112Т4, 2, F635R4, 2</code> — два товара в одной ячейке. Это нарушает нормальную форму. Создай новый лист с заголовками <code>zak_id, art, quant</code> и разложи по строкам:</p>
-  <div class="table-box"><table>
-    <thead><tr><th>zak_id</th><th>art</th><th>quant</th></tr></thead>
-    <tbody><tr><td>1</td><td>А112Т4</td><td>2</td></tr><tr><td>1</td><td>F635R4</td><td>2</td></tr><tr><td>2</td><td>H782T5</td><td>1</td></tr><tr><td>…</td><td>…</td><td>…</td></tr></tbody>
-  </table></div>
-  <p>Подсказка: «Данные» → «Текст по столбцам» → разделитель «запятая» раскидает ячейку по столбцам, дальше переставь вручную. У 10 заказов получится 20 строк.</p>
-  <h3>Сохранить как CSV</h3>
-  <p>«Файл» → «Сохранить как» → тип <b>CSV UTF-8</b>. Имена: <code>users.csv</code>, <code>pvz.csv</code>, <code>tovar.csv</code>, <code>zakaz.csv</code>, <code>zakaz_tovar.csv</code>.</p>
-  <div class="trap"><b>Кодировка</b>Только <b>CSV UTF-8</b>. Обычный CSV испортит русские буквы: вместо них будут знаки вопроса.</div>
-
-  <h2>Шаг 2. Создать базу и таблицы</h2>
-  <ol class="steps">
-    <li><div>DB Browser → «Новая база данных» → сохрани как <code>shop.db</code>. Окно создания таблицы закрой («Отмена»).</div></li>
-    <li><div>Вкладка «Выполнить SQL» → вставь скрипт таблиц (ниже) → ▶.</div></li>
-    <li><div>Нажми «Записать изменения» (<kbd>Ctrl</kbd>+<kbd>S</kbd>). Без этого ничего не сохранится!</div></li>
-  </ol>
-  <p>Скрипт таблиц (файл <code>schema.sql</code>). Его нужно уметь написать по памяти — он короче, чем кажется: 10 похожих блоков.</p>
-<pre class="full"><!--INCLUDE:schema.sql--></pre>
-
-  <h2>Шаг 3. Импортировать CSV</h2>
+  <h2>2.3 Загрузить CSV</h2>
   <ol class="steps">
     <li><div>«Файл» → «Импорт» → «Таблица из CSV-файла…» → выбери <code>users.csv</code>.</div></li>
     <li><div>Имя таблицы: <code>imp_users</code>. Галочка «Имена столбцов в первой строке». Кодировка UTF-8.</div></li>
-    <li><div>Посмотри предпросмотр. Если всё в одном столбце — поменяй разделитель на <code>;</code> (русский Excel часто сохраняет через точку с запятой).</div></li>
+    <li><div>Смотри предпросмотр. Всё в одном столбце — поменяй разделитель на <code>;</code> или <code>,</code>.</div></li>
     <li><div>Так же: <code>imp_pvz</code>, <code>imp_tovar</code>, <code>imp_zakaz</code>, <code>imp_zakaz_tovar</code>.</div></li>
   </ol>
+  <p>Таблицы <code>imp_…</code> временные: это сырой Excel внутри базы. Из них переносим данные в настоящие таблицы.</p>
 
-  <h2>Шаг 4. Перенести данные в таблицы</h2>
-  <p>Вкладка «Выполнить SQL» → вставь и выполни. Порядок важен: сначала справочники, потом то, что на них ссылается. Потом «Записать изменения».</p>
+  <h2>2.4 Перенести данные</h2>
+  <p>«Выполнить SQL» → вставь → ▶ → «Записать изменения». Порядок важен: сначала справочники, потом то, что на них ссылается.</p>
 <pre class="full"><!--INCLUDE:migrate.sql--></pre>
-  <div class="trap"><b>Проверяй количество</b><code>JOIN</code> молча выкидывает строки, у которых не нашлась пара (например, из-за опечатки или пробела). Сравни числа из проверочного запроса с количеством строк в Excel: 10 пользователей, 36 пунктов, 30 товаров, 10 заказов, 20 строк состава.</div>
+  <p>Как это читать: <code>INSERT INTO suppl (suppl) SELECT DISTINCT TRIM(suppl) FROM imp_tovar</code> — «возьми всех поставщиков из сырого Excel без повторов и положи в справочник». <code>JOIN suppl ON suppl.suppl = i.suppl</code> — «найди номер поставщика по названию».</p>
+  <div class="trap"><b>Сверь количество</b><code>JOIN</code> молча выкидывает строку, если пара не нашлась (опечатка, пробел, русская/латинская буква). Проверочный запрос в конце скрипта должен дать: users 10, pvz 36, tovar 30, zakaz 10, zakaz_tovar 20. Меньше — ищи расхождение в Excel.</div>
 
-  <h2>Шаг 5. ER-диаграмма в DbVisualizer (как на паре)</h2>
-  <p>DbVisualizer сам рисует схему по базе: таблицы с полями и стрелки-связи. Рисовать руками ничего не нужно. <b>Стрелки появляются только там, где в базе есть внешние ключи</b> (<code>REFERENCES</code> в скрипте таблиц).</p>
-  <h3>Подключить базу</h3>
-  <ol class="steps">
-    <li><div>В DB Browser нажми «Записать изменения». Иначе DbVisualizer увидит пустую базу.</div></li>
-    <li><div>Открой DbVisualizer. Слева панель <b>Databases</b> → кнопка <b>+</b> (Create Database Connection).</div></li>
-    <li><div>В списке драйверов выбери <b>SQLite</b>.</div></li>
-    <li><div>В поле с путём к файлу базы (Database) нажми кнопку выбора файла и укажи свой <code>shop.db</code> → <b>Connect</b>.</div></li>
-  </ol>
-  <div class="trap"><b>Драйвер</b>При первом подключении к SQLite DbVisualizer может предложить скачать драйвер — для этого нужен интернет. На экзамене интернета почти нет, поэтому <b>в подготовительный день</b> проверь, что подключение к SQLite на твоём компьютере уже работает.</div>
-  <h3>Открыть схему</h3>
-  <ol class="steps">
-    <li><div>В дереве слева раскрой: <b>SQLite → Schema → Tables</b>.</div></li>
-    <li><div>Дважды щёлкни по <b>Tables</b>. Справа откроется вкладка «SQLite: Tables».</div></li>
-    <li><div>В ней две вкладки: <b>Tables</b> (список таблиц) и <b>References</b> (схема). Открой <b>References</b>.</div></li>
-  </ol>
-  <h3>Настроить как на доске</h3>
-  <div class="screen">
-    <div><b>Layout: Hierarchical</b> — над схемой: раскладка «деревом», связи идут слева направо.</div>
-    <div><b>Display Options → All Tables</b> — справа: показать все таблицы.</div>
-    <div><b>Node Content: Columns</b> — внутри таблиц видно поля.</div>
-    <div><b>Show Data Type</b> — галочка: рядом с полем тип (INTEGER, TEXT). Можно выключить, типы не обязательны.</div>
-    <div><b>Links to Columns</b> — галочка: стрелка идёт от конкретного поля (pvz_id), а не от таблицы целиком.</div>
-  </div>
-  <p>Внизу справа написано <b>Tables: 10, References: 9</b>. Это главная проверка: 10 таблиц и 9 связей. Если связей меньше, в скрипте таблиц где-то забыт <code>REFERENCES</code>.</p>
-  <h3>Как должно получиться</h3>
-  <div class="er-box-wrap"><!--RAW:er_diagram.svg--></div>
-  <p class="legend">Подчёркнуто — первичный ключ. Зелёным — внешние ключи, от них идут стрелки. Схему можно прокрутить вбок.</p>
-  <p>Читай стрелку так: «<code>zakaz.pvz_id</code> указывает на <code>pvz.id</code>», то есть в заказе хранится номер пункта выдачи.</p>
-  <h3>Сохранить в PDF</h3>
-  <ol class="steps">
-    <li><div>На панели кнопок над схемой найди печать или экспорт.</div></li>
-    <li><div>Печать: в списке принтеров выбери <b>Microsoft Print to PDF</b> → сохрани как <code>er_diagram.pdf</code>.</div></li>
-    <li><div>Если не получается: экспортируй схему в картинку (PNG) или сделай скриншот (<kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>), вставь в Word → «Сохранить как» → PDF.</div></li>
-  </ol>
-  <p>Экзамену нужно, чтобы на схеме были таблицы, связи, поля и ключи. Типы данных можно не показывать.</p>
-  <h3>Если что-то не так</h3>
-  <div class="table-box"><table>
-    <thead><tr><th>Проблема</th><th>Что делать</th></tr></thead>
-    <tbody>
-      <tr><td>Таблиц нет или они пустые</td><td>В DB Browser не нажали «Записать изменения». Нажми, потом в DbVisualizer кнопку обновления (Refresh, <kbd>F5</kbd>).</td></tr>
-      <tr><td>Таблицы есть, стрелок нет</td><td>Нет внешних ключей. Проверь <code>REFERENCES</code> в скрипте таблиц, пересоздай базу.</td></tr>
-      <tr><td>Видны таблицы imp_…</td><td>Не выполнены <code>DROP TABLE imp_…</code> в конце переноса. Удали их, обнови схему.</td></tr>
-      <tr><td>Схема старая после изменений</td><td>Refresh (<kbd>F5</kbd>) на Tables в дереве слева.</td></tr>
-      <tr><td>База «занята» (locked)</td><td>В DB Browser есть несохранённые изменения: запиши их или закрой DB Browser.</td></tr>
-    </tbody>
-  </table></div>
+  <h2>2.5 Скрипт базы</h2>
+  <p>«Файл» → «Экспорт» → «База данных в SQL-файл…» → выдели все таблицы → «Сохранить» → <code>shop_script.sql</code>. Его сдаёшь как «скрипт БД».</p>
 
-  <h2>Шаг 6. Скрипт базы</h2>
-  <p>DB Browser → «Файл» → «Экспорт» → «База данных в SQL-файл…» → выбрать все таблицы → сохранить <code>shop_script.sql</code>. В нём и таблицы, и данные.</p>
+  <h2>2.6 SQL для проверки (пригодится в программе)</h2>
+<pre>SELECT * FROM tovar;                             -- всё
+SELECT name, price FROM tovar WHERE quant = 0;   -- условие
+SELECT * FROM tovar WHERE name LIKE '%бот%';     -- содержит «бот»
+SELECT * FROM tovar ORDER BY quant DESC;         -- сортировка по убыванию
+SELECT COUNT(*) FROM tovar;                      -- сколько строк
 
-  <h2>Проверь себя</h2>
-  <details class="q"><summary>Почему заголовки в Excel лучше переименовать латиницей?</summary><div>Чтобы в SQL писать простые имена столбцов (art, name) без кавычек и ошибок.</div></details>
-  <details class="q"><summary>В какой кодировке сохранять CSV?</summary><div>UTF-8.</div></details>
-  <details class="q"><summary>Почему сначала заполняют справочники?</summary><div>Товары и заказы ссылаются на них: пока нет поставщика с id, товар с этим id вставить нельзя.</div></details>
-  <details class="q"><summary>Что будет, если забыть «Записать изменения»?</summary><div>База закроется пустой, вся работа пропадёт.</div></details>
-  <details class="q"><summary>Какую вкладку открыть в DbVisualizer, чтобы увидеть схему?</summary><div>References (после двойного щелчка по Tables).</div></details>
-  <details class="q"><summary>Сколько таблиц и связей должно быть внизу схемы?</summary><div>Tables: 10, References: 9.</div></details>
+SELECT users.fio, role.role                      -- соединение таблиц
+FROM users JOIN role ON role.id = users.role_id;</pre>
+  <div class="trap"><b>Опасно</b><code>UPDATE</code> и <code>DELETE</code> без <code>WHERE</code> меняют или удаляют все строки.</div>
+  <div class="check"><b>Проверь себя</b>Вкладка «Данные» → таблица tovar: 30 строк, в столбцах suppl/manuf/cat — числа, а не названия. Таблиц <code>imp_…</code> слева больше нет.</div>
 </section>
 
-<!-- ================= 7 ================= -->
-<section id="l7" class="lesson" hidden data-title="Блок-схема по ГОСТ" data-desc="ГОСТ 19.701-90, draw.io">
-  <div class="eyebrow">Урок 7 · Модуль 2</div>
-  <h1>Блок-схема по ГОСТ 19.701-90</h1>
-  <div class="goal"><b>Что сдать</b>Алгоритм работы приложения в виде блок-схемы, в PDF.</div>
-  <h2>Фигуры</h2>
+<!-- ================= 3. DBVISUALIZER ================= -->
+<section id="s3" class="lesson" hidden data-title="DbVisualizer: ER-схема" data-desc="Подключить, References, PDF">
+  <div class="eyebrow">Шаг 3 · Модуль 1</div>
+  <h1>DbVisualizer: ER-схема</h1>
+  <div class="goal"><b>Результат</b><code>er_diagram.pdf</code>: таблицы, поля, ключи, стрелки-связи.</div>
+  <p>DbVisualizer сам рисует схему по базе. Стрелки берутся из внешних ключей (<code>REFERENCES</code>). Нет ключей — нет стрелок.</p>
+  <h2>3.1 Подключить базу</h2>
+  <ol class="steps">
+    <li><div>В DB Browser нажми «Записать изменения» (иначе DbVisualizer увидит пустую базу).</div></li>
+    <li><div>DbVisualizer → слева <b>Databases</b> → <b>+</b> → Create Database Connection → <b>SQLite</b>.</div></li>
+    <li><div>Имя, например <code>Обувь</code>. Поле файла базы → выбери <code>shop.db</code> → <b>Connect</b>.</div></li>
+  </ol>
+  <div class="trap"><b>Драйвер</b>Первый раз DbVisualizer качает драйвер SQLite из интернета. В подготовительный день проверь, что на экзаменационном компьютере подключение к SQLite уже работает.</div>
+  <h2>3.2 Открыть схему</h2>
+  <ol class="steps">
+    <li><div>Слева: <b>Обувь → Schema → Tables</b>. Двойной щелчок по <b>Tables</b>.</div></li>
+    <li><div>Справа вкладка <b>References</b>.</div></li>
+  </ol>
+  <h2>3.3 Настройки как на паре</h2>
+  <div class="screen">
+    <div><b>Layout: Hierarchical</b> — над схемой.</div>
+    <div><b>Display Options: All Tables</b> — справа.</div>
+    <div><b>Node Content: Columns</b> — видно поля.</div>
+    <div><b>Show Data Type</b> — типы рядом с полями (по желанию).</div>
+    <div><b>Links to Columns</b> — стрелка от конкретного поля.</div>
+  </div>
+  <p>Внизу справа: <b>Tables: 10, References: 9</b>. Это проверка, что всё верно.</p>
+  <h2>3.4 Сохранить в PDF</h2>
+  <ol class="steps">
+    <li><div>Кнопка печати на панели над схемой → принтер <b>Microsoft Print to PDF</b> → <code>er_diagram.pdf</code>.</div></li>
+    <li><div>Не вышло — скриншот <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> → вставить в Word → «Сохранить как» → PDF.</div></li>
+  </ol>
+  <h2>3.5 Если не так</h2>
   <div class="table-box"><table>
-    <thead><tr><th>Фигура</th><th>Значит</th><th>Пример</th></tr></thead>
+    <thead><tr><th>Видишь</th><th>Делай</th></tr></thead>
     <tbody>
-      <tr><td>Овал (скруглённый прямоугольник)</td><td>начало / конец</td><td>«Начало»</td></tr>
-      <tr><td>Параллелограмм</td><td>ввод / вывод данных</td><td>«Ввод логина и пароля»</td></tr>
-      <tr><td>Прямоугольник</td><td>действие</td><td>«Поиск пользователя в БД»</td></tr>
-      <tr><td>Ромб</td><td>условие, выходы «Да» и «Нет»</td><td>«Пользователь найден?»</td></tr>
-      <tr><td>Линия</td><td>порядок шагов: сверху вниз, слева направо; против этого направления — со стрелкой</td><td></td></tr>
+      <tr><td>Таблиц нет / пустые</td><td>DB Browser: «Записать изменения». DbVisualizer: Refresh (<kbd>F5</kbd>).</td></tr>
+      <tr><td>Стрелок нет</td><td>Нет <code>REFERENCES</code> в скрипте таблиц. Пересоздай базу.</td></tr>
+      <tr><td>Есть таблицы imp_…</td><td>Не выполнил <code>DROP TABLE imp_…</code>.</td></tr>
+      <tr><td>database is locked</td><td>В DB Browser несохранённые изменения: запиши или закрой.</td></tr>
     </tbody>
   </table></div>
-  <h2>Пример: алгоритм входа</h2>
-  <svg class="flow" viewBox="0 0 420 640" role="img" aria-label="Блок-схема алгоритма входа в систему">
+</section>
+
+<!-- ================= 4. PYTHON МИНИМУМ ================= -->
+<section id="s4" class="lesson" hidden data-title="Python: минимум" data-desc="Только то, что будет в программе">
+  <div class="eyebrow">Шаг 4 · Основа</div>
+  <h1>Python: минимум для экзамена</h1>
+  <div class="goal"><b>Результат</b>Понимаешь каждую строку программы. Создай <code>test.py</code> и набери примеры руками.</div>
+  <h2>Переменные и текст</h2>
+<pre>name = "Kari"               # текст
+price = 4990                # целое
+discount = 3.5              # дробное, через точку
+print(f"Цена: {price:.2f} ₽")   # f-строка: подставить значение, .2f — 2 знака
+login = "  admin  ".strip()     # убрать пробелы по краям
+text = "Kari".lower()           # маленькими буквами</pre>
+  <h2>Числа из текста</h2>
+<pre>quant = int("15")                           # "15" → 15
+price = float("19,5".replace(",", "."))     # запятую на точку</pre>
+  <h2>Условие</h2>
+<pre>if discount &gt; 15:
+    print("большая скидка")
+elif discount &gt; 0:
+    print("есть скидка")
+else:
+    print("без скидки")</pre>
+  <p>Двоеточие в конце и отступ 4 пробела — обязательны. Сравнения: <code>==</code> <code>!=</code> <code>&gt;</code> <code>&lt;</code> <code>&gt;=</code> <code>&lt;=</code>. Связки: <code>and</code> <code>or</code> <code>not</code>.</p>
+  <h2>Списки, словари, цикл</h2>
+<pre>suppliers = ["Kari", "Обувь для вас"]
+suppliers.append("Rieker")       # добавить
+print(suppliers[0])              # первый — номер 0
+for supplier in suppliers:       # перебрать
+    print(supplier)
+big = [p for p in [5, 20, 16] if p &gt; 15]    # отбор: [20, 16]
+
+ids = {"Kari": 1, "Rieker": 2}    # словарь: название → id
+print(ids["Rieker"])              # 2</pre>
+  <h2>Функция</h2>
+<pre>def final_price(price, discount):
+    return price * (100 - discount) / 100</pre>
+  <h2>Ошибки ввода</h2>
+<pre>try:
+    quant = int(text)
+except ValueError:
+    print("Нужно целое число")</pre>
+  <h2>Класс и self</h2>
+<pre>class Counter:
+    def __init__(self):     # при создании
+        self.value = 0      # self.что-то — память объекта
+    def add(self):
+        self.value += 1</pre>
+  <p>Вся программа — класс <code>ShopApp</code>. Кто вошёл и его роль лежат в <code>self.user_fio</code>, <code>self.user_role</code>.</p>
+  <div class="key"><b>Имена</b><code>snake_case</code>: <code>show_login</code>, <code>user_fio</code>. Класс — <code>ShopApp</code>. Одна команда на строку. Это проверяют.</div>
+</section>
+
+<!-- ================= 5. TKINTER МИНИМУМ ================= -->
+<section id="s5" class="lesson" hidden data-title="tkinter: минимум" data-desc="Окно, поля, кнопки, сообщения">
+  <div class="eyebrow">Шаг 5 · Основа</div>
+  <h1>tkinter: минимум</h1>
+  <div class="goal"><b>Результат</b>Умеешь сделать окно с полем, кнопкой, списком и сообщением.</div>
+  <p>Почему tkinter, а не HTML-сайт: tkinter встроен в Python, база подключается одной строкой. Для сайта нужен ещё веб-сервер — это дольше и больше мест для ошибок.</p>
+<pre>import tkinter as tk
+from tkinter import messagebox, ttk
+
+
+def check():
+    if not entry.get().strip():
+        messagebox.showwarning("Пустое поле", "Введите артикул.")
+        return
+    messagebox.showinfo("Готово", f"Артикул: {entry.get()}")
+
+
+window = tk.Tk()                     # одно окно на программу
+window.title("Проверка")             # заголовок
+window.geometry("400x300")           # размер
+entry = tk.Entry(window, width=30)   # поле ввода
+entry.pack(pady=5)                   # поставить
+tk.Button(window, text="Проверить", command=check).pack()
+box = ttk.Combobox(window, values=["Все поставщики", "Kari"], state="readonly")
+box.current(0)
+box.pack()
+window.mainloop()                    # показать окно</pre>
+  <div class="table-box"><table>
+    <thead><tr><th>Что</th><th>Как</th></tr></thead>
+    <tbody>
+      <tr><td>Надпись / картинка</td><td><code>tk.Label</code></td></tr>
+      <tr><td>Поле в одну строку / много строк</td><td><code>tk.Entry</code> / <code>tk.Text</code></td></tr>
+      <tr><td>Кнопка</td><td><code>tk.Button(..., command=функция)</code> — <b>без скобок</b></td></tr>
+      <tr><td>Контейнер</td><td><code>tk.Frame</code></td></tr>
+      <tr><td>Выпадающий список</td><td><code>ttk.Combobox(..., state="readonly")</code></td></tr>
+      <tr><td>Второе окно (форма)</td><td><code>tk.Toplevel</code></td></tr>
+      <tr><td>Поставить элемент</td><td><code>.pack()</code> (друг под другом, <code>side="left"/"right"</code>) или <code>.grid(row=, column=)</code> (таблицей)</td></tr>
+      <tr><td>Прочитать поле</td><td><code>entry.get()</code></td></tr>
+      <tr><td>Скрыть пароль</td><td><code>tk.Entry(..., show="*")</code></td></tr>
+      <tr><td>Сообщения</td><td><code>messagebox.showinfo / showwarning / showerror / askyesno</code></td></tr>
+    </tbody>
+  </table></div>
+  <h2>Картинка</h2>
+<pre>from PIL import Image, ImageTk
+image = Image.open("import/1.jpg")
+image.thumbnail((300, 200))           # уменьшить с пропорциями
+photo = ImageTk.PhotoImage(image)
+label = tk.Label(window, image=photo)
+label.image = photo                   # сохранить ссылку!
+label.pack()</pre>
+  <div class="trap"><b>Три ловушки</b>1) <code>command=check()</code> со скобками — сработает при запуске, не по нажатию. 2) Картинку без сохранённой ссылки Python удалит — будет пусто без ошибки. 3) <code>pack</code> и <code>grid</code> в одном контейнере — ошибка.</div>
+</section>
+
+<!-- ================= 6. ПРОГРАММА С НУЛЯ ================= -->
+<section id="s6" class="lesson" hidden data-title="Программа с нуля" data-desc="8 этапов с контрольными точками">
+  <div class="eyebrow">Шаг 6 · Модули 2–4</div>
+  <h1>Программа с нуля: 8 этапов</h1>
+  <div class="goal"><b>Результат</b><code>shop_app.py</code> в папке с <code>shop.db</code> и папкой <code>import</code>. После каждого этапа запускай: <code>python shop_app.py</code> и сверяй с контрольной точкой.</div>
+  <div class="table-box"><table>
+    <thead><tr><th>Этап</th><th>Что</th><th>Модуль</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Каркас: настройки, база, окно</td><td>2</td></tr>
+      <tr><td>2</td><td>Вход, роли, шапка с ФИО</td><td>2</td></tr>
+      <tr><td>3</td><td>Список товаров с прокруткой</td><td>2</td></tr>
+      <tr><td>4</td><td>Картинки, заглушка, цвета, цена</td><td>2</td></tr>
+      <tr><td>5</td><td>Поиск, фильтр, сортировка</td><td>3</td></tr>
+      <tr><td>6</td><td>Форма товара: добавить, изменить, фото</td><td>3</td></tr>
+      <tr><td>7</td><td>Удаление, одно окно, сообщения</td><td>3</td></tr>
+      <tr><td>8</td><td>Заказы</td><td>4</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>Этап 1. Каркас</h2>
+<pre>import os
+import sqlite3
+import tkinter as tk
+from datetime import datetime
+from tkinter import filedialog, messagebox, ttk
+
+from PIL import Image, ImageTk
+
+DB_PATH = "shop.db"
+RES_DIR = "import"
+PLACEHOLDER = "picture.png"
+
+FONT = ("Times New Roman", 12)          # шрифт и цвета — из руководства по стилю
+FONT_BOLD = ("Times New Roman", 12, "bold")
+FONT_OLD_PRICE = ("Times New Roman", 12, "overstrike")
+FONT_TITLE = ("Times New Roman", 18, "bold")
+COLOR_BG = "#FFFFFF"
+COLOR_ACCENT = "#00FA9A"
+COLOR_BIG_DISCOUNT = "#2E8B57"
+COLOR_NO_STOCK = "#ADD8E6"
+
+ROLE_GUEST = "Гость"
+ROLE_CLIENT = "Авторизированный клиент"
+ROLE_MANAGER = "Менеджер"
+ROLE_ADMIN = "Администратор"
+
+
+def connect():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row          # row["fio"] вместо row[0]
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
+
+
+def query(sql, params=()):                  # для SELECT
+    with connect() as conn:
+        return conn.execute(sql, params).fetchall()
+
+
+def execute(sql, params=()):                # для INSERT / UPDATE / DELETE
+    with connect() as conn:
+        return conn.execute(sql, params).lastrowid
+
+
+class ShopApp(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.geometry("1100x700")
+        self.configure(bg=COLOR_BG)
+        self.iconbitmap(os.path.join(RES_DIR, "Icon.ico"))
+        self.logo = ImageTk.PhotoImage(Image.open(os.path.join(RES_DIR, "Icon.png")).resize((60, 60)))
+        self.user_fio = None
+        self.user_role = None
+        self.form_window = None
+        self.show_login()
+
+    def clear_window(self):
+        self.unbind_all("&lt;MouseWheel&gt;")
+        for widget in self.winfo_children():
+            widget.destroy()
+
+
+if __name__ == "__main__":
+    app = ShopApp()
+    app.mainloop()</pre>
+  <p>Значения в SQL всегда через <code>?</code>, а не вклеиванием в текст: так безопасно. Окно одно: <code>clear_window()</code> стирает экран, потом рисуем новый.</p>
+  <div class="check"><b>Контрольная точка</b>Пока упадёт с <code>AttributeError ... show_login</code> — это нормально, этап 2 его добавит. Если ошибка про <code>PIL</code> — <code>pip install pillow</code>. Про <code>Icon.ico</code> — запускаешь не из папки программы.</div>
+
+  <h2>Этап 2. Вход, роли, шапка</h2>
+  <p>Методы внутри класса <code>ShopApp</code> (отступ 4 пробела):</p>
+<pre>    def show_login(self):
+        self.clear_window()
+        self.title("Вход в систему")
+        self.user_fio = None
+        self.user_role = None
+        form = tk.Frame(self, bg=COLOR_BG)
+        form.place(relx=0.5, rely=0.5, anchor="center")
+        tk.Label(form, image=self.logo, bg=COLOR_BG).pack(pady=5)
+        tk.Label(form, text="Вход в систему", font=FONT_TITLE, bg=COLOR_BG).pack(pady=10)
+        tk.Label(form, text="Логин", font=FONT, bg=COLOR_BG).pack(anchor="w")
+        self.login_entry = tk.Entry(form, font=FONT, width=30)
+        self.login_entry.pack(pady=(0, 10))
+        tk.Label(form, text="Пароль", font=FONT, bg=COLOR_BG).pack(anchor="w")
+        self.password_entry = tk.Entry(form, font=FONT, width=30, show="*")
+        self.password_entry.pack(pady=(0, 15))
+        tk.Button(form, text="Войти", font=FONT, bg=COLOR_ACCENT, width=25,
+                  command=self.login).pack(pady=5)
+        tk.Button(form, text="Войти как гость", font=FONT, width=25,
+                  command=self.login_as_guest).pack(pady=5)
+
+    def login(self):
+        login = self.login_entry.get().strip()
+        password = self.password_entry.get()
+        if not login or not password:
+            messagebox.showwarning("Не все поля заполнены", "Введите логин и пароль.")
+            return
+        rows = query(
+            "SELECT users.fio, role.role FROM users "
+            "JOIN role ON role.id = users.role_id "
+            "WHERE users.login = ? AND users.pass = ?",
+            (login, password),
+        )
+        if not rows:
+            messagebox.showerror("Ошибка входа", "Неверный логин или пароль.\n"
+                                 "Проверьте раскладку и Caps Lock и попробуйте снова.")
+            return
+        self.user_fio = rows[0]["fio"]
+        self.user_role = rows[0]["role"]
+        self.show_products()
+
+    def login_as_guest(self):
+        self.user_fio = "Гость"
+        self.user_role = ROLE_GUEST
+        self.show_products()
+
+    def is_staff(self):
+        return self.user_role in (ROLE_MANAGER, ROLE_ADMIN)
+
+    def show_header(self, title, back_command=None):
+        header = tk.Frame(self, bg=COLOR_ACCENT)
+        header.pack(fill="x")
+        tk.Label(header, image=self.logo, bg=COLOR_ACCENT).pack(side="left", padx=5, pady=5)
+        tk.Label(header, text=title, font=FONT_TITLE, bg=COLOR_ACCENT).pack(side="left", padx=10)
+        tk.Button(header, text="Выход", font=FONT, command=self.show_login).pack(side="right", padx=10)
+        if back_command:
+            tk.Button(header, text="Назад", font=FONT, command=back_command).pack(side="right", padx=5)
+        tk.Label(header, text=f"{self.user_fio} ({self.user_role})", font=FONT,
+                 bg=COLOR_ACCENT).pack(side="right", padx=10)</pre>
+  <div class="key"><b>Логика входа — 3 шага</b>Пусто → предупреждение. Не нашёл в базе → ошибка. Нашёл → запомнить ФИО и роль, показать товары.</div>
+  <div class="check"><b>Контрольная точка</b>Временно добавь <code>def show_products(self): self.clear_window(); self.show_header("Список товаров")</code>. Запусти: окно входа с логотипом. Неверный пароль — красная ошибка. Логин из таблицы users — шапка с ФИО справа, «Выход» возвращает назад.</div>
+
+  <h2>Этап 3. Список товаров с прокруткой</h2>
+  <p>Над классом, рядом с <code>query</code>:</p>
+<pre>PRODUCTS_SQL = """
+    SELECT tovar.id, tovar.art, tovar.name, cat.cat, tovar.descr, manuf.manuf,
+           suppl.suppl, tovar.price, tovar.unit, tovar.quant, tovar.discount, tovar.photo
+    FROM tovar
+    JOIN cat ON cat.id = tovar.cat
+    JOIN manuf ON manuf.id = tovar.manuf
+    JOIN suppl ON suppl.id = tovar.suppl
+    ORDER BY tovar.id
+"""
+
+
+def make_scroll_area(parent):
+    """Прокручиваемая область: Frame внутри Canvas, потому что сам Frame не прокручивается."""
+    canvas = tk.Canvas(parent, bg=COLOR_BG, highlightthickness=0)
+    scrollbar = tk.Scrollbar(parent, orient="vertical", command=canvas.yview)
+    inner = tk.Frame(canvas, bg=COLOR_BG)
+    inner.bind("&lt;Configure&gt;", lambda event: canvas.configure(scrollregion=canvas.bbox("all")))
+    window_id = canvas.create_window((0, 0), window=inner, anchor="nw")
+    canvas.bind("&lt;Configure&gt;", lambda event: canvas.itemconfigure(window_id, width=event.width))
+    canvas.configure(yscrollcommand=scrollbar.set)
+    canvas.bind_all("&lt;MouseWheel&gt;", lambda event: canvas.yview_scroll(int(-event.delta / 120), "units"))
+    scrollbar.pack(side="right", fill="y")
+    canvas.pack(side="left", fill="both", expand=True)
+    return inner</pre>
+  <p>В классе (замени временный <code>show_products</code>):</p>
+<pre>    def show_products(self):
+        self.clear_window()
+        self.title("Список товаров")
+        self.show_header("Список товаров")
+        if self.is_staff():
+            self.show_products_toolbar()          # этап 5
+        area = tk.Frame(self, bg=COLOR_BG)
+        area.pack(fill="both", expand=True)
+        self.product_list = make_scroll_area(area)
+        self.refresh_products()
+
+    def refresh_products(self):
+        products = query(PRODUCTS_SQL)
+        if self.is_staff():
+            products = self.filter_products(products)   # этап 5
+        for widget in self.product_list.winfo_children():
+            widget.destroy()
+        self.product_images = []
+        if not products:
+            tk.Label(self.product_list, text="Товары не найдены. Измените условия поиска или фильтра.",
+                     font=FONT, bg=COLOR_BG).pack(pady=30)
+        for product in products:
+            self.add_product_card(product)        # этап 4</pre>
+  <p>JOIN нужен, потому что в товаре лежат номера поставщика, производителя и категории, а показать надо названия.</p>
+  <div class="check"><b>Контрольная точка</b>Пока этапа 5 нет, закомментируй строки с <code>show_products_toolbar</code> и <code>filter_products</code> (<code>#</code> в начале). Этап 4 даст карточки.</div>
+
+  <h2>Этап 4. Карточка: фото, цвета, цена</h2>
+  <div class="swatches">
+    <div class="swatch sw-green">Скидка больше 15% → фон <b>#2E8B57</b></div>
+    <div class="swatch sw-white">Есть скидка → <s>4990.00 ₽</s> <b>4840.30 ₽</b></div>
+    <div class="swatch sw-blue">Остаток 0 → голубой фон</div>
+  </div>
+  <p>Над классом:</p>
+<pre>def load_photo(file_name, size):
+    path = os.path.join(RES_DIR, file_name or PLACEHOLDER)
+    if not os.path.exists(path):
+        path = os.path.join(RES_DIR, PLACEHOLDER)     # нет фото → заглушка
+    image = Image.open(path)
+    image.thumbnail(size)
+    return ImageTk.PhotoImage(image)</pre>
+  <p>В классе:</p>
+<pre>    def add_product_card(self, product):
+        if product["quant"] == 0:
+            bg = COLOR_NO_STOCK
+        elif product["discount"] &gt; 15:
+            bg = COLOR_BIG_DISCOUNT
+        else:
+            bg = COLOR_BG
+
+        card = tk.Frame(self.product_list, bg=bg, bd=1, relief="solid")
+        card.pack(fill="x", padx=10, pady=5)
+
+        photo = load_photo(product["photo"], (150, 100))
+        self.product_images.append(photo)               # сохранить ссылку!
+        tk.Label(card, image=photo, bg=bg).pack(side="left", padx=10, pady=10)
+
+        tk.Label(card, text=f"Скидка\n{product['discount']}%", font=FONT_TITLE, bg=bg,
+                 width=8).pack(side="right", padx=10)
+
+        info = tk.Frame(card, bg=bg)
+        info.pack(side="left", fill="both", expand=True, pady=10)
+        tk.Label(info, text=f"{product['cat']} | {product['name']}", font=FONT_BOLD, bg=bg).pack(anchor="w")
+        tk.Label(info, text=f"Описание товара: {product['descr'] or ''}", font=FONT, bg=bg,
+                 wraplength=600, justify="left").pack(anchor="w")
+        tk.Label(info, text=f"Производитель: {product['manuf']}", font=FONT, bg=bg).pack(anchor="w")
+        tk.Label(info, text=f"Поставщик: {product['suppl']}", font=FONT, bg=bg).pack(anchor="w")
+
+        price_row = tk.Frame(info, bg=bg)
+        price_row.pack(anchor="w")
+        tk.Label(price_row, text="Цена:", font=FONT, bg=bg).pack(side="left")
+        if product["discount"] &gt; 0:
+            final_price = product["price"] * (100 - product["discount"]) / 100
+            tk.Label(price_row, text=f"{product['price']:.2f} ₽", font=FONT_OLD_PRICE, fg="red",
+                     bg=bg).pack(side="left", padx=5)
+            tk.Label(price_row, text=f"{final_price:.2f} ₽", font=FONT, fg="black", bg=bg).pack(side="left")
+        else:
+            tk.Label(price_row, text=f"{product['price']:.2f} ₽", font=FONT, bg=bg).pack(side="left", padx=5)
+
+        tk.Label(info, text=f"Единица измерения: {product['unit']}", font=FONT, bg=bg).pack(anchor="w")
+        tk.Label(info, text=f"Количество на складе: {product['quant']}", font=FONT, bg=bg).pack(anchor="w")
+
+        if self.user_role == ROLE_ADMIN:                 # этап 6
+            bind_click(card, lambda event, product_id=product["id"]: self.open_product_form(product_id))</pre>
+  <div class="check"><b>Контрольная точка</b>Войди гостем: 30 карточек, у части — picture.png. S634B5 (Кеды, остаток 0) голубой. У товаров со скидкой старая цена зачёркнута красным. Колесо мыши прокручивает. Модуль 2 готов → делай скриншоты (шаг 8).</div>
+
+  <h2>Этап 5. Поиск, фильтр, сортировка</h2>
+  <p>Константы вверху файла:</p>
+<pre>ALL_SUPPLIERS = "Все поставщики"
+SORT_NONE = "Без сортировки"
+SORT_ASC = "Остаток: по возрастанию"
+SORT_DESC = "Остаток: по убыванию"</pre>
+  <p>В классе:</p>
+<pre>    def show_products_toolbar(self):
+        toolbar = tk.Frame(self, bg=COLOR_BG)
+        toolbar.pack(fill="x", padx=10, pady=5)
+
+        tk.Label(toolbar, text="Поиск:", font=FONT, bg=COLOR_BG).pack(side="left")
+        self.search_var = tk.StringVar()
+        # trace_add вызывает обновление при каждом изменении текста: поиск без кнопки «Найти»
+        self.search_var.trace_add("write", lambda *args: self.refresh_products())
+        tk.Entry(toolbar, textvariable=self.search_var, font=FONT, width=25).pack(side="left", padx=(5, 15))
+
+        tk.Label(toolbar, text="Поставщик:", font=FONT, bg=COLOR_BG).pack(side="left")
+        suppliers = [ALL_SUPPLIERS] + [row["suppl"] for row in query("SELECT suppl FROM suppl ORDER BY suppl")]
+        self.supplier_box = ttk.Combobox(toolbar, values=suppliers, state="readonly", font=FONT, width=18)
+        self.supplier_box.current(0)
+        self.supplier_box.bind("&lt;&lt;ComboboxSelected&gt;&gt;", lambda event: self.refresh_products())
+        self.supplier_box.pack(side="left", padx=(5, 15))
+
+        tk.Label(toolbar, text="Сортировка:", font=FONT, bg=COLOR_BG).pack(side="left")
+        self.sort_box = ttk.Combobox(toolbar, values=[SORT_NONE, SORT_ASC, SORT_DESC],
+                                     state="readonly", font=FONT, width=22)
+        self.sort_box.current(0)
+        self.sort_box.bind("&lt;&lt;ComboboxSelected&gt;&gt;", lambda event: self.refresh_products())
+        self.sort_box.pack(side="left", padx=5)
+
+        tk.Button(toolbar, text="Заказы", font=FONT, command=self.show_orders).pack(side="right", padx=5)
+        if self.user_role == ROLE_ADMIN:
+            tk.Button(toolbar, text="Добавить товар", font=FONT, bg=COLOR_ACCENT,
+                      command=lambda: self.open_product_form(None)).pack(side="right", padx=5)
+
+    def filter_products(self, products):
+        supplier = self.supplier_box.get()
+        if supplier != ALL_SUPPLIERS:
+            products = [product for product in products if product["suppl"] == supplier]
+
+        words = self.search_var.get().lower().split()
+        if words:
+            text_fields = ("art", "name", "cat", "descr", "manuf", "suppl", "unit")
+            found = []
+            for product in products:
+                text = " ".join(str(product[field] or "") for field in text_fields).lower()
+                if all(word in text for word in words):
+                    found.append(product)
+            products = found
+
+        if self.sort_box.get() == SORT_ASC:
+            products = sorted(products, key=lambda product: product["quant"])
+        elif self.sort_box.get() == SORT_DESC:
+            products = sorted(products, key=lambda product: product["quant"], reverse=True)
+        return products</pre>
+  <p>Поиск склеивает все текстовые поля товара и ищет каждое слово: <code>ботинки kari</code> найдёт ботинки Kari. Все три элемента читаются каждый раз — поэтому они работают вместе и сортировка не сбрасывается.</p>
+  <div class="check"><b>Контрольная точка</b>Раскомментируй строки из этапа 3. Войди менеджером: панель есть. «ботинки kari» → 7 товаров. Поставщик Kari → 16. Гость панели не видит. Кнопку «Заказы» временно закомментируй до этапа 8.</div>
+
+  <h2>Этап 6. Форма товара</h2>
+  <p>Это самый длинный кусок — бери из <a href="#code">полного кода</a> классы <code>BaseForm</code> и <code>ProductForm</code> целиком. Что в них важно:</p>
+  <ul>
+    <li><b>Окно</b> — <code>tk.Toplevel</code>, поля через <code>grid</code>: подпись слева, поле справа.</li>
+    <li><b>ID</b> при добавлении не показан, при редактировании <code>state="readonly"</code>.</li>
+    <li><b>Категория, производитель, поставщик</b> — Combobox. Словарь <code>{"Kari": 1}</code> превращает название в id.</li>
+    <li><b>Редактирование</b>: <code>SELECT * FROM tovar WHERE id = ?</code> → значения в поля.</li>
+    <li><b>Проверки</b> в <code>read_form</code>: цена число ≥ 0 с копейками, количество целое ≥ 0, скидка 0–100. Ошибка → <code>ValueError</code> с понятным текстом → <code>showerror</code>.</li>
+    <li><b>Сохранение</b>: новый — <code>INSERT</code>, старый — <code>UPDATE ... WHERE id = ?</code>. Дубль артикула → <code>sqlite3.IntegrityError</code> → сообщение.</li>
+    <li><b>Фото</b>: <code>filedialog.askopenfilename</code> → <code>thumbnail((300, 200))</code> → сохранить в папку программы → в базу имя файла → старое фото <code>os.remove</code>.</li>
+    <li>После сохранения: <code>self.destroy()</code> и <code>self.app.refresh_products()</code>.</li>
+  </ul>
+  <p>И в класс <code>ShopApp</code> + над классом:</p>
+<pre>def bind_click(widget, handler):          # клик по карточке и по всему внутри неё
+    widget.bind("&lt;Button-1&gt;", handler)
+    for child in widget.winfo_children():
+        bind_click(child, handler)
+
+    def form_is_open(self):               # (внутри ShopApp)
+        # Второе окно редактирования открыть нельзя, чтобы случайно не изменить две записи сразу
+        if self.form_window is not None and self.form_window.winfo_exists():
+            messagebox.showwarning("Окно уже открыто",
+                                   "Сначала сохраните изменения или закройте открытое окно редактирования.")
+            self.form_window.lift()
+            return True
+        return False
+
+    def open_product_form(self, product_id):
+        if not self.form_is_open():
+            self.form_window = ProductForm(self, product_id)</pre>
+  <div class="check"><b>Контрольная точка</b>Админ: «Добавить товар» открывает пустую форму без ID. Цена <code>-5</code> → ошибка. Клик по карточке → форма с данными, ID серый. Второй клик при открытой форме → «Окно уже открыто».</div>
+
+  <h2>Этап 7. Удаление</h2>
+<pre>    def delete(self):                     # (внутри ProductForm)
+        orders = query("SELECT COUNT(*) AS n FROM zakaz_tovar WHERE tovar_id = ?", (self.product_id,))[0]["n"]
+        if orders:
+            self.error("Удаление невозможно",
+                       f"Этот товар есть в заказах (заказов: {orders}). Товар, который присутствует в заказе, удалить нельзя.")
+            return
+        if not messagebox.askyesno("Подтверждение удаления",
+                                   f"Удалить товар «{self.product['name']}» ({self.product['art']})?\n"
+                                   "Это действие нельзя отменить.", icon="warning", parent=self):
+            return
+        execute("DELETE FROM tovar WHERE id = ?", (self.product_id,))
+        self.delete_photo_file(self.product["photo"])
+        messagebox.showinfo("Удалено", "Товар удалён.", parent=self)
+        self.destroy()
+        self.app.refresh_products()</pre>
+  <div class="key"><b>Правила удаления</b>Товар в заказе — нельзя (ошибка). Перед удалением — «Да/Нет». После — обновить список.</div>
+  <p>Плюс один метод в <code>ShopApp</code>, чтобы программа не падала никогда:</p>
+<pre>    def report_callback_exception(self, exc, value, traceback):
+        messagebox.showerror("Непредвиденная ошибка",
+                             f"Произошла ошибка: {value}\nПовторите действие или перезапустите программу.")</pre>
+  <div class="check"><b>Контрольная точка</b>Удалить А112Т4 → «Удаление невозможно». Удалить свой новый товар → вопрос → «Товар удалён», карточка исчезла. Модуль 3 готов.</div>
+
+  <h2>Этап 8. Заказы</h2>
+  <p>Из полного кода: <code>ORDERS_SQL</code>, <code>order_items_text</code>, методы <code>show_orders</code>, <code>refresh_orders</code>, <code>add_order_card</code>, <code>open_order_form</code> и класс <code>OrderForm</code>. Что важно:</p>
+  <ul>
+    <li>Экран заказов как экран товаров: шапка с «Назад», прокрутка, карточки (артикулы, статус, адрес, дата заказа; справа дата доставки).</li>
+    <li>Форма: артикулы «артикул, количество, …», статус и пункт выдачи — Combobox, даты <code>ГГГГ-ММ-ДД</code>.</li>
+    <li>Дату проверяет <code>datetime.strptime(text, "%Y-%m-%d")</code>: на 2025-02-30 будет ошибка.</li>
+    <li>Сохранение заказа и его состава — одной транзакцией (<code>with connect() as conn:</code>).</li>
+    <li>Удаление: «Да/Нет» → <code>DELETE FROM zakaz</code>. Состав удалится сам (<code>ON DELETE CASCADE</code>).</li>
+  </ul>
+  <div class="check"><b>Контрольная точка</b>Менеджер: «Заказы» → 10 карточек, кнопки «Добавить» нет. Админ: добавить заказ <code>F635R4, 3</code> → появился. Дата 2025-02-30 → ошибка ввода. Модуль 4 готов.</div>
+</section>
+
+<!-- ================= 7. ОШИБКИ ================= -->
+<section id="s7" class="lesson" hidden data-title="Ошибки и как чинить" data-desc="Traceback, частые ошибки">
+  <div class="eyebrow">Шаг 7</div>
+  <h1>Ошибки: как понять и починить</h1>
+  <h2>Как читать Traceback</h2>
+<pre>Traceback (most recent call last):
+  File "C:\...\shop_app.py", line 143, in show_login
+    tk.Label(form, text="Логин").pak(anchor="w")
+AttributeError: 'Label' object has no attribute 'pak'</pre>
+  <ol class="steps">
+    <li><div><b>Читай последнюю строку</b>: тип ошибки и что не так.</div></li>
+    <li><div><b>Строкой выше</b> — номер строки (<code>line 143</code>).</div></li>
+    <li><div>VS Code: <kbd>Ctrl</kbd>+<kbd>G</kbd> → номер → исправь (<code>pak</code> → <code>pack</code>).</div></li>
+  </ol>
+  <h2>Частые ошибки</h2>
+  <div class="table-box"><table class="stack">
+    <thead><tr><th>Сообщение</th><th>Что значит</th><th>Что делать</th></tr></thead>
+    <tbody>
+      <tr><td><code>IndentationError: expected an indented block</code></td><td>Нет отступа после if/def/for</td><td>4 пробела</td></tr>
+      <tr><td><code>SyntaxError: expected ':'</code></td><td>Нет двоеточия</td><td>Допиши <code>:</code></td></tr>
+      <tr><td><code>SyntaxError: '(' was never closed</code></td><td>Не закрыта скобка</td><td>Посчитай скобки</td></tr>
+      <tr><td><code>NameError: name '...' is not defined</code></td><td>Опечатка или забыт <code>self.</code></td><td>Сверь написание</td></tr>
+      <tr><td><code>AttributeError: 'ShopApp' object has no attribute 'search_var'</code></td><td>Объект ещё не создан</td><td>У гостя панели поиска нет — проверь <code>is_staff()</code></td></tr>
+      <tr><td><code>TypeError: ... takes 0 positional arguments but 1 was given</code></td><td>Забыт <code>self</code> или <code>event</code></td><td><code>def f(self):</code>, <code>lambda event: ...</code></td></tr>
+      <tr><td><code>ValueError: invalid literal for int()</code></td><td>Текст вместо числа</td><td><code>try / except ValueError</code></td></tr>
+      <tr><td><code>IndexError: list index out of range</code></td><td><code>rows[0]</code> у пустого списка</td><td>Сначала <code>if not rows:</code></td></tr>
+      <tr><td><code>ModuleNotFoundError: No module named 'PIL'</code></td><td>Нет Pillow</td><td><code>pip install pillow</code></td></tr>
+      <tr><td><code>sqlite3.OperationalError: no such table: tovar</code></td><td>Запущено не из папки программы: создалась пустая shop.db</td><td>Запускай из папки; лишнюю shop.db удали</td></tr>
+      <tr><td><code>sqlite3.OperationalError: no such column</code></td><td>Опечатка в столбце</td><td>Сверь с <code>schema.sql</code></td></tr>
+      <tr><td><code>sqlite3.IntegrityError: UNIQUE constraint failed</code></td><td>Такой артикул уже есть</td><td>Поймай и покажи сообщение</td></tr>
+      <tr><td><code>sqlite3.IntegrityError: FOREIGN KEY constraint failed</code></td><td>Ссылка на несуществующий id</td><td>Проверь id, порядок вставки</td></tr>
+      <tr><td><code>sqlite3.OperationalError: database is locked</code></td><td>DB Browser держит базу</td><td>Запиши изменения или закрой DB Browser</td></tr>
+      <tr><td><code>TclError: cannot use geometry manager "pack" inside ...</code></td><td>pack и grid в одном контейнере</td><td>Одно на контейнер</td></tr>
+      <tr><td><code>TclError: image "pyimage2" does not exist</code></td><td>Два <code>tk.Tk()</code></td><td>Второе окно — <code>tk.Toplevel</code></td></tr>
+    </tbody>
+  </table></div>
+  <h2>Ошибки без сообщения</h2>
+  <div class="table-box"><table>
+    <thead><tr><th>Видишь</th><th>Причина</th></tr></thead>
+    <tbody>
+      <tr><td>Кнопка сработала при запуске</td><td><code>command=f()</code> со скобками</td></tr>
+      <tr><td>Пусто вместо картинки</td><td>Не сохранена ссылка на картинку</td></tr>
+      <tr><td>Окно мелькнуло</td><td>Нет <code>mainloop()</code></td></tr>
+      <tr><td>Поиск не реагирует</td><td>Нет <code>trace_add</code> / нет <code>textvariable</code></td></tr>
+      <tr><td>Вопросы вместо букв</td><td>CSV не в UTF-8</td></tr>
+    </tbody>
+  </table></div>
+  <div class="trap"><b>Застрял больше 5 минут</b>Закомментируй сломанный кусок (<kbd>Ctrl</kbd>+<kbd>/</kbd>), чтобы программа запускалась, и иди дальше. Рабочая программа без одной функции лучше неработающей.</div>
+</section>
+
+<!-- ================= 8. ДОКУМЕНТЫ ================= -->
+<section id="s8" class="lesson" hidden data-title="Блок-схема, docx, git, exe" data-desc="Что ещё сдать">
+  <div class="eyebrow">Шаг 8 · Модули 2 и 4</div>
+  <h1>Блок-схема, скриншоты, git, exe</h1>
+  <h2>Блок-схема (ГОСТ 19.701-90) → PDF</h2>
+  <div class="table-box"><table>
+    <thead><tr><th>Фигура</th><th>Значит</th></tr></thead>
+    <tbody>
+      <tr><td>Овал</td><td>Начало / конец</td></tr>
+      <tr><td>Параллелограмм</td><td>Ввод / вывод</td></tr>
+      <tr><td>Прямоугольник</td><td>Действие</td></tr>
+      <tr><td>Ромб</td><td>Условие, выходы «Да» / «Нет»</td></tr>
+      <tr><td>Линия вверх или влево</td><td>Со стрелкой</td></tr>
+    </tbody>
+  </table></div>
+  <svg class="flow" viewBox="0 0 420 640" role="img" aria-label="Блок-схема алгоритма входа">
     <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="arrow" d="M0,0 L10,5 L0,10 z"/></marker></defs>
     <rect class="shape" x="110" y="10" width="160" height="40" rx="20"/><text x="190" y="35" text-anchor="middle">Начало</text>
     <path class="line" d="M190 50 V75"/>
@@ -721,773 +986,70 @@ WHERE id NOT IN (SELECT tovar_id FROM zakaz_tovar);</pre>
     <path class="line" d="M190 550 V580"/>
     <rect class="shape" x="110" y="580" width="160" height="40" rx="20"/><text x="190" y="605" text-anchor="middle">Конец</text>
   </svg>
-  <p>Обе ветки с сообщениями возвращаются к вводу логина (линия вверх, поэтому со стрелкой).</p>
-  <h2>Сделай в draw.io</h2>
+  <p>Рисуй в draw.io: раздел «Блок-схема» → соединяй фигуры → «Файл» → «Экспортировать как» → PDF.</p>
+  <h2>Скриншоты → docx</h2>
+  <p>Войди гостем, клиентом, менеджером, админом. <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> → Word → подпиши каждый скрин → сохрани .docx.</p>
+  <h2>exe</h2>
+<pre>pip install pyinstaller
+pyinstaller --onefile --windowed --icon=import/Icon.ico shop_app.py</pre>
+  <p>Готовый файл — <code>dist/shop_app.exe</code>. Рядом с ним положи <code>shop.db</code> и папку <code>import</code>.</p>
+  <h2>git (GitHub Desktop)</h2>
   <ol class="steps">
-    <li><div>Открой draw.io (diagrams.net) → «Создать новую диаграмму» → пустая.</div></li>
-    <li><div>Слева раздел «Блок-схема» (Flowchart): там есть все фигуры из таблицы.</div></li>
-    <li><div>Соединяй фигуры, наводя мышь на край фигуры и протягивая линию к следующей.</div></li>
-    <li><div>«Файл» → «Экспортировать как» → PDF.</div></li>
+    <li><div>File → Clone repository → URL → адрес, который дадут → Clone.</div></li>
+    <li><div>Скопируй в папку: <code>shop_app.py</code> (не архивом), exe, <code>shop.db</code>, <code>shop_script.sql</code>, папку <code>import</code>, PDF, docx.</div></li>
+    <li><div>Внизу текст коммита («Модуль 1») → Commit to main → Push origin.</div></li>
   </ol>
-  <p>Можно нарисовать не только вход, но и весь алгоритм: вход → роль → какие кнопки показать → список товаров. Главное — правильные фигуры и подписи «Да»/«Нет» у ромбов.</p>
-  <h2>Проверь себя</h2>
-  <details class="q"><summary>Какая фигура у условия?</summary><div>Ромб, с выходами «Да» и «Нет».</div></details>
-  <details class="q"><summary>Какая фигура у ввода данных?</summary><div>Параллелограмм.</div></details>
-  <details class="q"><summary>Когда на линии нужна стрелка?</summary><div>Когда поток идёт против основного направления (снизу вверх или справа налево).</div></details>
+  <div class="key"><b>Загружай после каждого модуля</b>Кончится время — сданное уже засчитают.</div>
 </section>
 
-<!-- ================= 8 ================= -->
-<section id="l8" class="lesson" hidden data-title="tkinter: окна и кнопки" data-desc="Label, Entry, Button, pack, grid">
-  <div class="eyebrow">Урок 8</div>
-  <h1>tkinter: окна и кнопки</h1>
-  <div class="goal"><b>Что узнаешь</b>Как сделать окно, надписи, поля ввода, кнопки, выпадающие списки и сообщения.</div>
-  <h2>Самое маленькое окно</h2>
-<pre>import tkinter as tk
-
-window = tk.Tk()                 # создать окно
-window.title("Моё окно")         # заголовок
-window.geometry("400x300")       # размер
-tk.Label(window, text="Привет").pack()
-window.mainloop()                # показать и ждать действий</pre>
-  <p>Набери, запусти. Без <code>mainloop()</code> окно сразу закроется.</p>
-  <h2>Элементы (виджеты)</h2>
-  <div class="table-box"><table>
-    <thead><tr><th>Виджет</th><th>Что это</th></tr></thead>
-    <tbody>
-      <tr><td><code>tk.Label</code></td><td>надпись или картинка</td></tr>
-      <tr><td><code>tk.Entry</code></td><td>поле ввода одной строки</td></tr>
-      <tr><td><code>tk.Text</code></td><td>поле ввода нескольких строк (описание)</td></tr>
-      <tr><td><code>tk.Button</code></td><td>кнопка</td></tr>
-      <tr><td><code>tk.Frame</code></td><td>невидимый контейнер, чтобы группировать</td></tr>
-      <tr><td><code>ttk.Combobox</code></td><td>выпадающий список</td></tr>
-      <tr><td><code>tk.Toplevel</code></td><td>второе окно (форма редактирования)</td></tr>
-    </tbody>
-  </table></div>
-  <h2>Кнопка и поле ввода</h2>
-<pre>import tkinter as tk
-from tkinter import messagebox
-
-def say_hello():
-    name = name_entry.get()                    # прочитать поле
-    messagebox.showinfo("Привет", f"Привет, {name}!")
-
-window = tk.Tk()
-name_entry = tk.Entry(window, width=30)
-name_entry.pack(pady=5)
-tk.Button(window, text="Нажми", command=say_hello).pack()
-window.mainloop()</pre>
-  <div class="trap"><b>Ловушка №1 на экзамене</b><code>command=say_hello</code> — <b>без скобок</b>. Со скобками функция выполнится сразу при запуске, а кнопка работать не будет.</div>
-  <h2>Расстановка: pack и grid</h2>
-  <ul>
-    <li><code>.pack()</code> — ставит элементы друг под другом. <code>side="left"</code> — в строку, <code>side="right"</code> — прижать вправо, <code>fill="x"</code> — растянуть по ширине, <code>padx/pady</code> — отступы.</li>
-    <li><code>.grid(row=0, column=1)</code> — таблица из строк и столбцов. Удобно для форм: подпись слева, поле справа.</li>
-  </ul>
-  <p>В одном контейнере нельзя смешивать pack и grid — программа зависнет. Разные Frame можно.</p>
-  <h2>Сообщения</h2>
-<pre>messagebox.showinfo("Сохранено", "Товар сохранён.")         # синяя i
-messagebox.showwarning("Внимание", "Заполните логин.")      # жёлтый !
-messagebox.showerror("Ошибка", "Неверный пароль.")          # красный X
-if messagebox.askyesno("Удаление", "Удалить товар?"):        # Да / Нет
-    print("удаляем")</pre>
-  <p>Экзамен требует: у сообщения правильный тип (ошибка, предупреждение, информация), понятный заголовок и текст «что не так и как исправить».</p>
-  <h2>Выпадающий список</h2>
-<pre>from tkinter import ttk
-box = ttk.Combobox(window, values=["Все поставщики", "Kari"], state="readonly")
-box.current(0)                                   # выбрать первый
-box.bind("&lt;&lt;ComboboxSelected&gt;&gt;", lambda event: print(box.get()))
-box.pack()</pre>
-  <p><code>state="readonly"</code> — можно только выбирать, печатать нельзя. <code>lambda</code> — короткая безымянная функция в одну строку.</p>
-  <h2>Картинка</h2>
-<pre>from PIL import Image, ImageTk
-image = Image.open("import/1.jpg")
-image.thumbnail((300, 200))                 # уменьшить, сохранив пропорции
-photo = ImageTk.PhotoImage(image)
-label = tk.Label(window, image=photo)
-label.image = photo                         # сохранить ссылку!
-label.pack()</pre>
-  <div class="trap"><b>Ловушка №2</b>Картинку нужно где-то сохранить (<code>self.logo</code> или <code>label.image</code>). Иначе Python её удалит, и на экране будет пусто без всякой ошибки.</div>
-  <h2>Задания</h2>
-  <div class="task"><b>Задание 1</b>Окно «Проверка артикула»: поле «Артикул» и кнопка «Проверить». Пустое поле — предупреждение «Введите артикул товара.», иначе — информация «Вы ввели артикул …».
-    <details><summary>Показать ответ</summary>
-<pre>import tkinter as tk
-from tkinter import messagebox
-
-
-def check_art():
-    art = art_entry.get().strip()
-    if not art:
-        messagebox.showwarning("Пустое поле", "Введите артикул товара.")
-        return
-    messagebox.showinfo("Артикул", f"Вы ввели артикул {art}.")
-
-
-window = tk.Tk()
-window.title("Проверка артикула")
-tk.Label(window, text="Артикул").pack()
-art_entry = tk.Entry(window, width=30)
-art_entry.pack(pady=5)
-tk.Button(window, text="Проверить", command=check_art).pack()
-window.mainloop()</pre></details></div>
-  <div class="task"><b>Задание 2</b>Выпадающий список поставщиков из <code>shop.db</code>, первый пункт «Все поставщики». При выборе под списком надпись «Выбран: Kari». Запускай из папки, где лежит shop.db.
-    <details><summary>Показать ответ</summary>
-<pre>import sqlite3
-import tkinter as tk
-from tkinter import ttk
-
-with sqlite3.connect("shop.db") as conn:
-    suppliers = [row[0] for row in conn.execute("SELECT suppl FROM suppl")]
-
-window = tk.Tk()
-window.title("Поставщики")
-result_label = tk.Label(window, text="Ничего не выбрано")
-box = ttk.Combobox(window, values=["Все поставщики"] + suppliers, state="readonly")
-box.current(0)
-box.bind("&lt;&lt;ComboboxSelected&gt;&gt;", lambda event: result_label.configure(text=f"Выбран: {box.get()}"))
-box.pack(pady=5)
-result_label.pack()
-window.mainloop()</pre>
-    <p>Это тот же приём, что и фильтр по поставщику в модуле 3.</p></details></div>
-
-  <h2>Проверь себя</h2>
-  <details class="q"><summary>Как прочитать текст из Entry?</summary><div><code>entry.get()</code></div></details>
-  <details class="q"><summary>Как прижать кнопку к правому краю?</summary><div><code>.pack(side="right")</code></div></details>
-  <details class="q"><summary>Как спросить «Да/Нет» перед удалением?</summary><div><code>messagebox.askyesno("Заголовок", "Текст")</code> — вернёт True или False.</div></details>
-</section>
-
-<!-- ================= ОШИБКИ ================= -->
-<section id="lerr" class="lesson" hidden data-title="Как читать ошибки" data-desc="Traceback, частые ошибки, как искать">
-  <div class="eyebrow">Урок 9</div>
-  <h1>Как читать ошибки</h1>
-  <div class="goal"><b>Что узнаешь</b>Как понять, что сломалось, по сообщению Python, и как быстро исправить 15 самых частых ошибок.</div>
-  <p>На экзамене программа <b>обязательно</b> хоть раз выдаст ошибку. Это нормально. Плохо не то, что ошибка случилась, а когда сидишь и не понимаешь, что она значит. Этот урок про то, как её понять за минуту.</p>
-
-  <h2>Как читать Traceback</h2>
-  <p>Когда Python падает, он печатает Traceback — «след» ошибки. Пример:</p>
-<pre>Traceback (most recent call last):
-  File "C:\Users\...\shop\shop_app.py", line 529, in &lt;module&gt;
-    app = ShopApp()
-  File "C:\Users\...\shop\shop_app.py", line 103, in __init__
-    self.show_login()
-  File "C:\Users\...\shop\shop_app.py", line 143, in show_login
-    tk.Label(form, text="Логин", font=FONT, bg=COLOR_BG).pak(anchor="w")
-AttributeError: 'Label' object has no attribute 'pak'</pre>
-  <ol class="steps">
-    <li><div><b>Читай снизу.</b> Последняя строка — самое главное: тип ошибки (<code>AttributeError</code>) и что не так (у Label нет <code>pak</code>).</div></li>
-    <li><div><b>Строкой выше</b> — номер строки в твоём файле (<code>line 143</code>) и сама строка.</div></li>
-    <li><div><b>Перейди к этой строке</b>: в VS Code <kbd>Ctrl</kbd>+<kbd>G</kbd> → номер строки. Здесь опечатка: <code>pak</code> вместо <code>pack</code>.</div></li>
-  </ol>
-  <p>Всё, что выше, — цепочка «кто кого вызвал». Обычно её можно не читать.</p>
-
-  <h2>Ошибки Python</h2>
-  <div class="table-box"><table class="stack">
-    <thead><tr><th>Сообщение</th><th>Что значит</th><th>Что делать</th></tr></thead>
-    <tbody>
-      <tr><td><code>IndentationError: expected an indented block after 'if' statement</code></td><td>После <code>if</code>, <code>for</code>, <code>def</code> нет отступа</td><td>Поставь 4 пробела у строк внутри</td></tr>
-      <tr><td><code>SyntaxError: expected ':'</code></td><td>Забыто двоеточие после <code>if</code>, <code>def</code>, <code>for</code>, <code>class</code></td><td>Допиши <code>:</code> в конце строки</td></tr>
-      <tr><td><code>SyntaxError: '(' was never closed</code></td><td>Не закрыта скобка</td><td>Посчитай скобки в строке и выше</td></tr>
-      <tr><td><code>NameError: name 'usr_fio' is not defined</code></td><td>Опечатка в имени или переменной ещё нет</td><td>Сравни написание; внутри класса не забыт ли <code>self.</code>?</td></tr>
-      <tr><td><code>AttributeError: 'ShopApp' object has no attribute 'search_var'</code></td><td>Обращаешься к <code>self.что-то</code>, которое ещё не создано</td><td>Проверь, что строка с <code>self.search_var = ...</code> выполнилась раньше (у гостя панели поиска нет!)</td></tr>
-      <tr><td><code>TypeError: ShopApp.login() takes 0 positional arguments but 1 was given</code></td><td>Забыт <code>self</code> в <code>def</code> внутри класса</td><td><code>def login(self):</code></td></tr>
-      <tr><td><code>TypeError: &lt;lambda&gt;() takes 0 positional arguments but 1 was given</code></td><td>Обработчику <code>bind</code> передаётся событие</td><td><code>lambda event: ...</code></td></tr>
-      <tr><td><code>ValueError: invalid literal for int() with base 10: 'abc'</code></td><td>Пытаешься сделать число из текста</td><td>Оберни в <code>try / except ValueError</code></td></tr>
-      <tr><td><code>IndexError: list index out of range</code></td><td>Берёшь <code>rows[0]</code>, а список пустой</td><td>Сначала проверь <code>if not rows:</code></td></tr>
-      <tr><td><code>ModuleNotFoundError: No module named 'PIL'</code></td><td>Не установлен Pillow</td><td><code>pip install pillow</code></td></tr>
-      <tr><td><code>FileNotFoundError: [Errno 2] No such file or directory: 'import/Icon.png'</code></td><td>Нет файла или программа запущена не из своей папки</td><td>Проверь имя файла и запускай из папки программы</td></tr>
-    </tbody>
-  </table></div>
-
-  <h2>Ошибки базы данных</h2>
-  <div class="table-box"><table class="stack">
-    <thead><tr><th>Сообщение</th><th>Что значит</th><th>Что делать</th></tr></thead>
-    <tbody>
-      <tr><td><code>sqlite3.OperationalError: no such table: tovar</code></td><td>Самая частая! Программа открыла <b>не ту</b> базу</td><td>См. ловушку ниже</td></tr>
-      <tr><td><code>sqlite3.OperationalError: no such column: nme</code></td><td>Опечатка в имени столбца в SQL</td><td>Сверь с <code>schema.sql</code></td></tr>
-      <tr><td><code>sqlite3.IntegrityError: UNIQUE constraint failed: tovar.art</code></td><td>Такой артикул уже есть</td><td>Поймай и покажи сообщение пользователю</td></tr>
-      <tr><td><code>sqlite3.IntegrityError: NOT NULL constraint failed</code></td><td>Не заполнено обязательное поле</td><td>Проверяй поля формы до сохранения</td></tr>
-      <tr><td><code>sqlite3.IntegrityError: FOREIGN KEY constraint failed</code></td><td>Ссылка на несуществующий id или удаление того, на что ссылаются</td><td>Проверь id; товар из заказа не удаляй</td></tr>
-      <tr><td><code>sqlite3.OperationalError: database is locked</code></td><td>Базу держит DB Browser с несохранёнными изменениями</td><td>«Записать изменения» или закрой DB Browser</td></tr>
-    </tbody>
-  </table></div>
-  <div class="trap"><b>Ловушка: no such table</b>Если запустить программу не из её папки, <code>sqlite3.connect("shop.db")</code> не найдёт базу и <b>молча создаст новую пустую</b> <code>shop.db</code> там, откуда запустили. Отсюда «no such table». Решение: запускай из папки программы (<code>cd</code> в неё, или в VS Code открой именно эту папку). Пустой лишний shop.db потом удали.</div>
-
-  <h2>Ошибки tkinter</h2>
-  <div class="table-box"><table class="stack">
-    <thead><tr><th>Сообщение</th><th>Что значит</th><th>Что делать</th></tr></thead>
-    <tbody>
-      <tr><td><code>TclError: cannot use geometry manager "pack" inside ".!frame": grid is already managing its content windows</code></td><td>В одном контейнере смешаны <code>pack</code> и <code>grid</code></td><td>В одном Frame — что-то одно</td></tr>
-      <tr><td><code>TclError: image "pyimage2" does not exist</code></td><td>Создано два окна <code>tk.Tk()</code> или картинка до окна</td><td>Одно <code>tk.Tk()</code> на программу, второе окно — <code>tk.Toplevel</code></td></tr>
-    </tbody>
-  </table></div>
-
-  <h2>Ошибки без сообщения</h2>
-  <p>Самые коварные: программа не падает, но работает не так.</p>
-  <div class="table-box"><table>
-    <thead><tr><th>Что видишь</th><th>Причина</th></tr></thead>
-    <tbody>
-      <tr><td>Кнопка срабатывает сама при запуске, а потом не работает</td><td><code>command=self.login()</code> со скобками</td></tr>
-      <tr><td>Вместо картинки пустое место</td><td>Не сохранена ссылка на картинку (<code>self.logo</code>, список картинок)</td></tr>
-      <tr><td>Окно мелькнуло и закрылось</td><td>Нет <code>mainloop()</code></td></tr>
-      <tr><td>Изменения в базе не сохранились</td><td>В DB Browser не нажато «Записать изменения»</td></tr>
-      <tr><td>Поиск не реагирует на ввод</td><td>Нет <code>trace_add</code> или Entry без <code>textvariable</code></td></tr>
-      <tr><td>Русские буквы — знаки вопроса</td><td>CSV сохранён не в UTF-8</td></tr>
-    </tbody>
-  </table></div>
-
-  <h2>Как искать ошибку, если непонятно</h2>
-  <ol class="steps">
-    <li><div><b>Посмотри значение.</b> Поставь перед подозрительной строкой <code>print(product)</code> или <code>print(rows)</code> и запусти. Часто сразу видно: пусто, не тот тип, не то имя.</div></li>
-    <li><div><b>Отмени последнее.</b> <kbd>Ctrl</kbd>+<kbd>Z</kbd> до момента, когда работало. Ошибка в том, что ты менял последним.</div></li>
-    <li><div><b>Выключи кусок.</b> Закомментируй (<kbd>Ctrl</kbd>+<kbd>/</kbd> в VS Code) непонятное место, чтобы программа запускалась, и иди дальше. Рабочая программа без одной функции лучше неработающей.</div></li>
-    <li><div><b>SQL отдельно.</b> Если не работает запрос, скопируй его в DB Browser → «Выполнить SQL». Там ошибка видна сразу.</div></li>
-  </ol>
-  <h2>Задания</h2>
-  <p>Сломай программу специально и посмотри, что скажет Python. Так ошибки перестанут пугать:</p>
-  <ul>
-    <li>убери двоеточие после <code>def show_login(self)</code>;</li>
-    <li>напиши <code>.pak()</code> вместо <code>.pack()</code>;</li>
-    <li>в SQL напиши <code>FROM tovr</code>;</li>
-    <li>запусти программу из другой папки: <code>python C:\путь\shop_app.py</code> из папки «Документы».</li>
-  </ul>
-  <p>Каждый раз найди по Traceback строку с ошибкой и верни как было.</p>
-  <h2>Проверь себя</h2>
-  <details class="q"><summary>С какой строки читать Traceback?</summary><div>С последней: там тип ошибки и что не так. Строкой выше — номер строки в файле.</div></details>
-  <details class="q"><summary>Что значит «no such table: tovar», если таблица точно есть?</summary><div>Программа запущена не из своей папки и открыла (создала) другую, пустую shop.db.</div></details>
-  <details class="q"><summary>TypeError: takes 0 positional arguments but 1 was given — что забыто?</summary><div>self в def внутри класса (или event в lambda для bind).</div></details>
-  <details class="q"><summary>Как быстро посмотреть, что лежит в переменной?</summary><div>print(переменная) перед подозрительной строкой.</div></details>
-</section>
-
-<!-- ================= 9 ================= -->
-<section id="l9" class="lesson" hidden data-title="Модуль 2: вход и товары" data-desc="Окно входа, роли, список с подсветкой">
-  <div class="eyebrow">Урок 10 · Модуль 2 · 40 минут</div>
-  <h1>Модуль 2: вход и список товаров</h1>
-  <div class="goal"><b>Что сдать</b>Программу с окном входа и списком товаров, блок-схему (урок 7), документ .docx со скриншотами.</div>
-  <p>Полный код — в разделе <a href="#code">«Полный код»</a>. Здесь разбираем его по кускам в том порядке, в каком его писать.</p>
-
-  <h2>Кусок 1. Импорты и настройки</h2>
-<pre>import os
-import sqlite3
-import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
-from PIL import Image, ImageTk
-
-DB_PATH = "shop.db"
-RES_DIR = "import"
-PLACEHOLDER = "picture.png"
-
-FONT = ("Times New Roman", 12)
-COLOR_BG = "#FFFFFF"
-COLOR_ACCENT = "#00FA9A"
-COLOR_BIG_DISCOUNT = "#2E8B57"
-COLOR_NO_STOCK = "#ADD8E6"</pre>
-  <p>Константы (большими буквами) — настройки в одном месте. Шрифт и цвета возьми из руководства по стилю, которое дадут на экзамене (Приложение 3).</p>
-
-  <h2>Кусок 2. Работа с базой</h2>
-<pre>def connect():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row      # обращаться к полям по имени: row["fio"]
-    conn.execute("PRAGMA foreign_keys = ON")
-    return conn
-
-
-def query(sql, params=()):
-    with connect() as conn:
-        return conn.execute(sql, params).fetchall()
-
-
-def execute(sql, params=()):
-    with connect() as conn:
-        return conn.execute(sql, params).lastrowid</pre>
-  <p><code>query</code> — для SELECT (возвращает строки), <code>execute</code> — для INSERT/UPDATE/DELETE. <code>with</code> сам сохраняет изменения. Значения подставляются через <code>?</code>: так безопасно.</p>
-
-  <h2>Кусок 3. Класс программы</h2>
-<pre>class ShopApp(tk.Tk):
-    def __init__(self):
-        super().__init__()
-        self.geometry("1100x700")
-        self.iconbitmap(os.path.join(RES_DIR, "Icon.ico"))       # иконка окна
-        self.logo = ImageTk.PhotoImage(Image.open(os.path.join(RES_DIR, "Icon.png")).resize((60, 60)))
-        self.user_fio = None
-        self.user_role = None
-        self.form_window = None
-        self.show_login()
-
-    def clear_window(self):
-        self.unbind_all("&lt;MouseWheel&gt;")
-        for widget in self.winfo_children():
-            widget.destroy()</pre>
-  <p>Окно одно на всю программу. Чтобы показать другой экран, <code>clear_window()</code> стирает всё, а функция экрана рисует новое. Это и есть «последовательный интерфейс».</p>
-
-  <h2>Кусок 4. Окно входа</h2>
-<pre>def show_login(self):
-    self.clear_window()
-    self.title("Вход в систему")
-    form = tk.Frame(self, bg=COLOR_BG)
-    form.place(relx=0.5, rely=0.5, anchor="center")   # по центру окна
-    tk.Label(form, image=self.logo, bg=COLOR_BG).pack(pady=5)
-    tk.Label(form, text="Логин", font=FONT, bg=COLOR_BG).pack(anchor="w")
-    self.login_entry = tk.Entry(form, font=FONT, width=30)
-    self.login_entry.pack()
-    tk.Label(form, text="Пароль", font=FONT, bg=COLOR_BG).pack(anchor="w")
-    self.password_entry = tk.Entry(form, font=FONT, width=30, show="*")
-    self.password_entry.pack()
-    tk.Button(form, text="Войти", command=self.login).pack(pady=5)
-    tk.Button(form, text="Войти как гость", command=self.login_as_guest).pack()</pre>
-  <p><code>show="*"</code> прячет пароль звёздочками.</p>
-
-  <h2>Кусок 5. Проверка логина</h2>
-<pre>def login(self):
-    login = self.login_entry.get().strip()
-    password = self.password_entry.get()
-    if not login or not password:
-        messagebox.showwarning("Не все поля заполнены", "Введите логин и пароль.")
-        return
-    rows = query(
-        "SELECT users.fio, role.role FROM users "
-        "JOIN role ON role.id = users.role_id "
-        "WHERE users.login = ? AND users.pass = ?",
-        (login, password),
-    )
-    if not rows:
-        messagebox.showerror("Ошибка входа", "Неверный логин или пароль. ...")
-        return
-    self.user_fio = rows[0]["fio"]
-    self.user_role = rows[0]["role"]
-    self.show_products()
-
-def login_as_guest(self):
-    self.user_fio = "Гость"
-    self.user_role = ROLE_GUEST
-    self.show_products()</pre>
-  <div class="key"><b>Запомни три шага</b>Пусто → предупреждение. Не нашёл → ошибка. Нашёл → запомнить ФИО и роль, показать товары.</div>
-
-  <h2>Кусок 6. Шапка: ФИО справа и «Выход»</h2>
-<pre>def show_header(self, title, back_command=None):
-    header = tk.Frame(self, bg=COLOR_ACCENT)
-    header.pack(fill="x")
-    tk.Label(header, image=self.logo, bg=COLOR_ACCENT).pack(side="left")
-    tk.Label(header, text=title, font=FONT_TITLE, bg=COLOR_ACCENT).pack(side="left")
-    tk.Button(header, text="Выход", command=self.show_login).pack(side="right")
-    if back_command:
-        tk.Button(header, text="Назад", command=back_command).pack(side="right")
-    tk.Label(header, text=f"{self.user_fio} ({self.user_role})", bg=COLOR_ACCENT).pack(side="right")</pre>
-  <p>Требование: ФИО в правом верхнем углу и выход на окно входа из любой учётной записи.</p>
-
-  <h2>Кусок 7. Загрузка товаров с JOIN</h2>
-<pre>PRODUCTS_SQL = """
-    SELECT tovar.id, tovar.art, tovar.name, cat.cat, tovar.descr, manuf.manuf,
-           suppl.suppl, tovar.price, tovar.unit, tovar.quant, tovar.discount, tovar.photo
-    FROM tovar
-    JOIN cat ON cat.id = tovar.cat
-    JOIN manuf ON manuf.id = tovar.manuf
-    JOIN suppl ON suppl.id = tovar.suppl
-"""</pre>
-  <p>В товаре хранятся номера поставщика, производителя и категории, а показать нужно названия. JOIN подтягивает названия из справочников.</p>
-
-  <h2>Кусок 8. Прокрутка</h2>
-  <p>Товаров 30, на экран не влезут. В tkinter прокручивать умеет только <code>Canvas</code>, поэтому кладём Frame внутрь Canvas. Это готовый рецепт — функция <code>make_scroll_area</code> из полного кода. Выучи её как есть.</p>
-
-  <h2>Кусок 9. Карточка товара и подсветка</h2>
-  <div class="swatches">
-    <div class="swatch sw-green">Скидка больше 15% → фон <b>#2E8B57</b></div>
-    <div class="swatch sw-white">Есть скидка → <s>4990.00 ₽</s> <b>4840.30 ₽</b>: старая цена перечёркнута красным, новая чёрным</div>
-    <div class="swatch sw-blue">Нет на складе (0 шт.) → строка голубая</div>
-  </div>
-<pre>def add_product_card(self, product):
-    if product["quant"] == 0:
-        bg = COLOR_NO_STOCK
-    elif product["discount"] &gt; 15:
-        bg = COLOR_BIG_DISCOUNT
-    else:
-        bg = COLOR_BG
-
-    card = tk.Frame(self.product_list, bg=bg, bd=1, relief="solid")
-    card.pack(fill="x", padx=10, pady=5)
-
-    photo = load_photo(product["photo"], (150, 100))
-    self.product_images.append(photo)        # сохранить ссылку на картинку!
-    tk.Label(card, image=photo, bg=bg).pack(side="left", padx=10, pady=10)
-
-    tk.Label(card, text=f"Скидка\n{product['discount']}%", bg=bg).pack(side="right")
-
-    info = tk.Frame(card, bg=bg)
-    info.pack(side="left", fill="both", expand=True)
-    tk.Label(info, text=f"{product['cat']} | {product['name']}", bg=bg).pack(anchor="w")
-    # ... описание, производитель, поставщик, единица, количество — так же
-
-    price_row = tk.Frame(info, bg=bg)
-    price_row.pack(anchor="w")
-    if product["discount"] &gt; 0:
-        final_price = product["price"] * (100 - product["discount"]) / 100
-        tk.Label(price_row, text=f"{product['price']:.2f} ₽",
-                 font=("Times New Roman", 12, "overstrike"), fg="red", bg=bg).pack(side="left")
-        tk.Label(price_row, text=f"{final_price:.2f} ₽", fg="black", bg=bg).pack(side="left")
-    else:
-        tk.Label(price_row, text=f"{product['price']:.2f} ₽", bg=bg).pack(side="left")</pre>
-  <p>Зачёркивание — это шрифт с <code>"overstrike"</code>. Картинку-заглушку подставляет функция <code>load_photo</code>: если фото нет в базе или файла нет в папке, берётся <code>picture.png</code>.</p>
-<pre>def load_photo(file_name, size):
-    path = os.path.join(RES_DIR, file_name or PLACEHOLDER)
-    if not os.path.exists(path):
-        path = os.path.join(RES_DIR, PLACEHOLDER)
-    image = Image.open(path)
-    image.thumbnail(size)
-    return ImageTk.PhotoImage(image)</pre>
-
-  <h2>Кусок 10. Не падать никогда</h2>
-<pre>def report_callback_exception(self, exc, value, traceback):
-    messagebox.showerror("Непредвиденная ошибка",
-                         f"Произошла ошибка: {value}\nПовторите действие.")</pre>
-  <p>Эта функция внутри класса перехватывает любую неожиданную ошибку в кнопках и показывает сообщение вместо закрытия программы.</p>
-
-  <h2>Скриншоты в docx</h2>
-  <ol class="steps">
-    <li><div>Запусти программу, войди по очереди гостем, клиентом, менеджером, администратором.</div></li>
-    <li><div><kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> → выдели окно → вставь в Word (<kbd>Ctrl</kbd>+<kbd>V</kbd>).</div></li>
-    <li><div>Под каждым скрином подпиши, что на нём («Вход менеджера, список товаров с подсветкой»). Сохрани как .docx.</div></li>
-  </ol>
-  <h2>Задания</h2>
-  <p>Делай на копии <code>shop_app.py</code>, чтобы не сломать рабочую версию.</p>
-  <div class="task"><b>Задание 1</b>Если товара на складе меньше 3 (но не 0), покажи строку «Количество на складе» оранжевым текстом.
-    <details><summary>Показать ответ</summary>
-    <p>В <code>add_product_card</code> замени строку с количеством:</p>
-<pre>quant_color = "orange" if 0 &lt; product["quant"] &lt; 3 else "black"
-tk.Label(info, text=f"Количество на складе: {product['quant']}", font=FONT,
-         fg=quant_color, bg=bg).pack(anchor="w")</pre>
-    <p><code>a if условие else b</code> — короткий if в одну строку: «если условие, то a, иначе b».</p></details></div>
-  <div class="task"><b>Задание 2</b>Под шапкой выведи надпись «Показано 30 из 30». У менеджера при поиске число должно меняться: «Показано 15 из 30».
-    <details><summary>Показать ответ</summary>
-    <p>В <code>show_products</code> перед строкой <code>area = tk.Frame(...)</code>:</p>
-<pre>self.count_label = tk.Label(self, font=FONT, bg=COLOR_BG)
-self.count_label.pack(anchor="w", padx=10)</pre>
-    <p>В <code>refresh_products</code> вместо первых трёх строк:</p>
-<pre>products = query(PRODUCTS_SQL)
-total = len(products)
-if self.is_staff():
-    products = self.filter_products(products)
-self.count_label.configure(text=f"Показано {len(products)} из {total}")</pre></details></div>
-
-  <h2>Проверь себя</h2>
-  <details class="q"><summary>Какой цвет у товара со скидкой больше 15%?</summary><div>#2E8B57.</div></details>
-  <details class="q"><summary>Как сделать перечёркнутый текст?</summary><div>Шрифт с параметром "overstrike": <code>("Times New Roman", 12, "overstrike")</code>.</div></details>
-  <details class="q"><summary>Что показать, если у товара нет фото?</summary><div>picture.png из ресурсов.</div></details>
-  <details class="q"><summary>Зачем self.product_images.append(photo)?</summary><div>Чтобы Python не удалил картинки и они не пропали с экрана.</div></details>
-</section>
-
-<!-- ================= 10 ================= -->
-<section id="l10" class="lesson" hidden data-title="Модуль 3: поиск и форма товара" data-desc="Поиск, фильтр, сортировка, добавление, удаление">
-  <div class="eyebrow">Урок 11 · Модуль 3 · 1 ч 30 мин</div>
-  <h1>Модуль 3: поиск, фильтр, форма товара</h1>
-  <div class="goal"><b>Что сдать</b>Поиск, фильтр и сортировка у менеджера и админа; форма добавления и редактирования товара у админа; удаление; кнопки «Назад»; понятные сообщения.</div>
-
-  <h2>Панель поиска (только менеджер и админ)</h2>
-<pre>if self.is_staff():
-    self.show_products_toolbar()
-
-# внутри show_products_toolbar:
-self.search_var = tk.StringVar()
-self.search_var.trace_add("write", lambda *args: self.refresh_products())
-tk.Entry(toolbar, textvariable=self.search_var).pack(side="left")
-
-suppliers = ["Все поставщики"] + [row["suppl"] for row in query("SELECT suppl FROM suppl")]
-self.supplier_box = ttk.Combobox(toolbar, values=suppliers, state="readonly")
-self.supplier_box.current(0)
-self.supplier_box.bind("&lt;&lt;ComboboxSelected&gt;&gt;", lambda event: self.refresh_products())
-
-self.sort_box = ttk.Combobox(toolbar, values=[SORT_NONE, SORT_ASC, SORT_DESC], state="readonly")
-self.sort_box.current(0)
-self.sort_box.bind("&lt;&lt;ComboboxSelected&gt;&gt;", lambda event: self.refresh_products())</pre>
-  <p><code>trace_add("write", ...)</code> вызывает обновление при каждой набранной букве: поиск «в реальном времени» без кнопки «Найти». Первым пунктом фильтра — «Все поставщики», как требует задание.</p>
-
-  <h2>Фильтр, поиск и сортировка вместе</h2>
-<pre>def filter_products(self, products):
-    supplier = self.supplier_box.get()
-    if supplier != ALL_SUPPLIERS:
-        products = [product for product in products if product["suppl"] == supplier]
-
-    words = self.search_var.get().lower().split()
-    if words:
-        text_fields = ("art", "name", "cat", "descr", "manuf", "suppl", "unit")
-        found = []
-        for product in products:
-            text = " ".join(str(product[field] or "") for field in text_fields).lower()
-            if all(word in text for word in words):
-                found.append(product)
-        products = found
-
-    if self.sort_box.get() == SORT_ASC:
-        products = sorted(products, key=lambda product: product["quant"])
-    elif self.sort_box.get() == SORT_DESC:
-        products = sorted(products, key=lambda product: product["quant"], reverse=True)
-    return products</pre>
-  <p>Все текстовые поля товара склеиваются в одну строку, и каждое слово из поиска должно в ней найтись. Так работает поиск «по нескольким атрибутам одновременно»: <code>ботинки kari</code> найдёт ботинки производителя Kari. Каждый раз читаем все три элемента, поэтому сортировка не сбрасывается при поиске.</p>
-
-  <h2>Обновление списка</h2>
-<pre>def refresh_products(self):
-    products = query(PRODUCTS_SQL)
-    if self.is_staff():
-        products = self.filter_products(products)
-    for widget in self.product_list.winfo_children():
-        widget.destroy()
-    self.product_images = []
-    if not products:
-        tk.Label(self.product_list, text="Товары не найдены.").pack()
-    for product in products:
-        self.add_product_card(product)</pre>
-  <p>Эту же функцию вызываем после сохранения и удаления — требование «данные в списке должны обновиться».</p>
-
-  <h2>Открыть форму: кнопка и клик по товару</h2>
-<pre>if self.user_role == ROLE_ADMIN:
-    tk.Button(toolbar, text="Добавить товар",
-              command=lambda: self.open_product_form(None)).pack(side="right")
-
-# в add_product_card: клик по карточке открывает редактирование
-if self.user_role == ROLE_ADMIN:
-    bind_click(card, lambda event, product_id=product["id"]: self.open_product_form(product_id))</pre>
-  <p><code>None</code> — новый товар, число — редактировать этот товар. <code>bind_click</code> вешает клик на карточку и на всё внутри неё.</p>
-
-  <h2>Только одно окно редактирования</h2>
-<pre>def form_is_open(self):
-    if self.form_window is not None and self.form_window.winfo_exists():
-        messagebox.showwarning("Окно уже открыто",
-                               "Сначала сохраните изменения или закройте открытое окно.")
-        self.form_window.lift()
-        return True
-    return False
-
-def open_product_form(self, product_id):
-    if not self.form_is_open():
-        self.form_window = ProductForm(self, product_id)</pre>
-
-  <h2>Форма товара</h2>
-  <p>Форма — отдельное окно <code>tk.Toplevel</code>. Поля стоят в два столбца через <code>grid</code>: подпись слева, поле справа. Общий для товара и заказа код (поля, кнопки) вынесен в класс <code>BaseForm</code>.</p>
-  <ul>
-    <li><b>ID</b>: при добавлении не показывается, при редактировании — поле <code>state="readonly"</code>.</li>
-    <li><b>Категория, производитель, поставщик</b> — Combobox из справочников. Чтобы по названию получить id, держим словарь <code>{"Kari": 1, ...}</code>.</li>
-    <li>При редактировании все поля заполняются из базы: <code>SELECT * FROM tovar WHERE id = ?</code>.</li>
-  </ul>
-
-  <h2>Проверка ввода</h2>
-<pre>try:
-    price = round(float(self.price_entry.get().replace(",", ".")), 2)
-except ValueError:
-    raise ValueError("Цена должна быть числом, например 1999.99.") from None
-if price &lt; 0:
-    raise ValueError("Цена не может быть отрицательной.")
-# так же: количество — целое и не меньше 0, скидка — от 0 до 100</pre>
-  <p>Функция <code>read_form</code> бросает <code>ValueError</code> с понятным текстом, а <code>save</code> его ловит и показывает:</p>
-<pre>def save(self):
-    try:
-        data = self.read_form()
-    except ValueError as error:
-        self.error("Ошибка ввода", str(error))
-        return
-    ...</pre>
-
-  <h2>Сохранение</h2>
-<pre># новый товар
-execute("INSERT INTO tovar (art, name, ...) VALUES (?, ?, ...)", values)
-# существующий
-execute("UPDATE tovar SET art = ?, name = ?, ... WHERE id = ?", values + [self.product_id])</pre>
-  <p>Если артикул уже есть, база выдаст <code>sqlite3.IntegrityError</code> (артикул UNIQUE) — ловим и пишем «Товар с таким артикулом уже существует».</p>
-
-  <h2>Фото товара</h2>
-<pre>def choose_photo(self):
-    path = filedialog.askopenfilename(title="Выберите фото товара",
-                                      filetypes=[("Изображения", "*.jpg *.jpeg *.png")])
-    if path:
-        self.new_photo_path = path
-
-def save_new_photo(self, art):
-    image = Image.open(self.new_photo_path)
-    image.thumbnail((300, 200))                       # не больше 300×200
-    file_name = f"{art}_{datetime.now():%Y%m%d%H%M%S}.jpg"
-    image.convert("RGB").save(os.path.join(RES_DIR, file_name), "JPEG")
-    return file_name                                  # имя пойдёт в базу</pre>
-  <p>Фото копируется в папку программы, в базе хранится его имя. После сохранения старое фото удаляется через <code>os.remove</code> (кроме заглушки picture.png).</p>
-
-  <h2>Удаление товара</h2>
-<pre>def delete(self):
-    orders = query("SELECT COUNT(*) AS n FROM zakaz_tovar WHERE tovar_id = ?",
-                   (self.product_id,))[0]["n"]
-    if orders:
-        self.error("Удаление невозможно", "Товар, который есть в заказе, удалить нельзя.")
-        return
-    if not messagebox.askyesno("Подтверждение удаления", "Удалить товар? Это нельзя отменить.",
-                               icon="warning", parent=self):
-        return
-    execute("DELETE FROM tovar WHERE id = ?", (self.product_id,))
-    self.destroy()
-    self.app.refresh_products()</pre>
-  <div class="key"><b>Три правила удаления</b>1) Товар в заказе удалять нельзя — сообщение об ошибке. 2) Перед удалением спросить «Да/Нет». 3) После удаления обновить список.</div>
-
-  <h2>Комментарии в коде</h2>
-  <p>Требование: комментарии только там, где неочевидно. Не пиши <code># кнопка</code> над кнопкой. Пиши, <b>зачем</b>: <code># Второе окно открыть нельзя, чтобы случайно не изменить две записи</code>.</p>
-
-  <h2>Задания</h2>
-  <div class="task"><b>Задание 1</b>Добавь на панель кнопку «Сбросить»: она очищает поиск, ставит «Все поставщики» и «Без сортировки».
-    <details><summary>Показать ответ</summary>
-    <p>Новый метод в классе <code>ShopApp</code>:</p>
-<pre>def reset_filters(self):
-    self.supplier_box.current(0)
-    self.sort_box.current(0)
-    self.search_var.set("")   # trace_add сам обновит список</pre>
-    <p>В <code>show_products_toolbar</code> после выпадающего списка сортировки:</p>
-<pre>tk.Button(toolbar, text="Сбросить", font=FONT, command=self.reset_filters).pack(side="left", padx=5)</pre>
-    <p>Поиск очищаем последним: к этому моменту списки уже сброшены, и обновление покажет все товары.</p></details></div>
-  <div class="task"><b>Задание 2</b>Добавь в сортировку пункт «Цена: по возрастанию».
-    <details><summary>Показать ответ</summary>
-    <p>В список значений <code>self.sort_box</code> добавь <code>"Цена: по возрастанию"</code>, а в <code>filter_products</code> перед <code>return products</code>:</p>
-<pre>elif self.sort_box.get() == "Цена: по возрастанию":
-    products = sorted(products, key=lambda product: product["price"])</pre></details></div>
-
-  <h2>Проверь себя</h2>
-  <details class="q"><summary>Как сделать поиск без кнопки «Найти»?</summary><div>StringVar + <code>trace_add("write", ...)</code>, который вызывает обновление списка при каждом изменении текста.</div></details>
-  <details class="q"><summary>Как не дать открыть два окна редактирования?</summary><div>Хранить окно в self.form_window и перед открытием проверять <code>winfo_exists()</code>.</div></details>
-  <details class="q"><summary>Какого размера должно быть фото?</summary><div>Не больше 300×200: <code>image.thumbnail((300, 200))</code>.</div></details>
-  <details class="q"><summary>Как узнать, есть ли товар в заказах?</summary><div><code>SELECT COUNT(*) FROM zakaz_tovar WHERE tovar_id = ?</code></div></details>
-</section>
-
-<!-- ================= 11 ================= -->
-<section id="l11" class="lesson" hidden data-title="Модуль 4: заказы, exe, git" data-desc="Список заказов, форма, сборка, загрузка">
-  <div class="eyebrow">Урок 12 · Модуль 4 · 1 час</div>
-  <h1>Модуль 4: заказы, exe и git</h1>
-  <div class="goal"><b>Что сдать</b>Кнопку «Заказы» у менеджера и админа, добавление/редактирование/удаление заказов у админа, всё загрузить в репозиторий.</div>
-  <h2>Список заказов</h2>
-<pre>ORDERS_SQL = """
-    SELECT zakaz.id, zakaz.zak_date, zakaz.dost_date, zakaz.code,
-           status.status, pvz.addr, users.fio
-    FROM zakaz
-    JOIN status ON status.id = zakaz.status_id
-    JOIN pvz ON pvz.id = zakaz.pvz_id
-    JOIN users ON users.id = zakaz.user_id
-"""</pre>
-  <p>Экран заказов устроен как экран товаров: шапка с кнопкой «Назад», прокрутка, карточки. В карточке: артикулы, статус, адрес пункта выдачи, дата заказа, справа — дата доставки.</p>
-  <p>Артикулы заказа собираем из <code>zakaz_tovar</code> в строку «А112Т4, 2, F635R4, 2»:</p>
-<pre>def order_items_text(order_id):
-    rows = query("SELECT tovar.art, zakaz_tovar.quant FROM zakaz_tovar "
-                 "JOIN tovar ON tovar.id = zakaz_tovar.tovar_id WHERE zakaz_tovar.zak_id = ?",
-                 (order_id,))
-    return ", ".join(f"{row['art']}, {row['quant']}" for row in rows)</pre>
-  <h2>Форма заказа</h2>
-  <p>Поля: артикул (в формате «артикул, количество, …»), статус (Combobox), адрес пункта выдачи (Combobox), клиент, дата заказа, дата выдачи. Проверки:</p>
-  <ul>
-    <li>каждый артикул существует в tovar;</li>
-    <li>количество — целое больше 0;</li>
-    <li>дата настоящая: <code>datetime.strptime(text, "%Y-%m-%d")</code> выдаст ошибку на 2025-02-30;</li>
-    <li>дата выдачи не раньше даты заказа.</li>
-  </ul>
-  <p>Заказ и его состав сохраняются в одной транзакции: при редактировании старый состав удаляем и записываем заново.</p>
-<pre>with connect() as conn:
-    conn.execute("UPDATE zakaz SET ... WHERE id = ?", values)
-    conn.execute("DELETE FROM zakaz_tovar WHERE zak_id = ?", (order_id,))
-    conn.executemany("INSERT INTO zakaz_tovar (zak_id, tovar_id, quant) VALUES (?, ?, ?)", rows)</pre>
-  <p>Удаление заказа: спросить «Да/Нет», потом <code>DELETE FROM zakaz WHERE id = ?</code>. Состав заказа удалится сам благодаря <code>ON DELETE CASCADE</code> в схеме.</p>
-
-  <h2>Исполняемый файл (exe)</h2>
-  <ol class="steps">
-    <li><div><code>pip install pyinstaller</code> (если не стоит).</div></li>
-    <li><div>В папке программы: <code>pyinstaller --onefile --windowed --icon=import/Icon.ico shop_app.py</code></div></li>
-    <li><div>Готовый <code>shop_app.exe</code> появится в папке <code>dist</code>. Скопируй рядом с ним <code>shop.db</code> и папку <code>import</code> — иначе программа их не найдёт.</div></li>
-  </ol>
-  <h2>Загрузка в git (GitHub Desktop)</h2>
-  <ol class="steps">
-    <li><div>«File» → «Clone repository» → вкладка URL → вставь адрес репозитория, который дадут → Clone.</div></li>
-    <li><div>Скопируй в эту папку: исходный код (<code>shop_app.py</code>, не архивом), <code>dist/shop_app.exe</code>, <code>shop.db</code>, скрипт <code>.sql</code>, папку <code>import</code>, PDF и docx.</div></li>
-    <li><div>В GitHub Desktop слева появятся файлы. Внизу впиши сообщение («Модуль 4: заказы») → «Commit to main».</div></li>
-    <li><div>Нажми «Push origin». Готово.</div></li>
-  </ol>
-  <div class="key"><b>Совет</b>Загружай результат после каждого модуля, а не в конце: если время кончится, сданное уже засчитают.</div>
-  <h2>Задания</h2>
-  <div class="task"><b>Задание 1</b>На экране заказов добавь выпадающий список «Все статусы / Новый / Завершен», который фильтрует заказы. Он нужен и менеджеру, и администратору. С фильтром «Новый» должно остаться 3 заказа.
-    <details><summary>Показать ответ</summary>
-    <p>В <code>show_orders</code> панель создаётся для всех, а кнопка «Добавить заказ» — только админу:</p>
-<pre>toolbar = tk.Frame(self, bg=COLOR_BG)
-toolbar.pack(fill="x", padx=10, pady=5)
-statuses = ["Все статусы"] + [row["status"] for row in query("SELECT status FROM status")]
-self.status_filter = ttk.Combobox(toolbar, values=statuses, state="readonly", font=FONT)
-self.status_filter.current(0)
-self.status_filter.bind("&lt;&lt;ComboboxSelected&gt;&gt;", lambda event: self.refresh_orders())
-self.status_filter.pack(side="left")
-if self.user_role == ROLE_ADMIN:
-    tk.Button(toolbar, text="Добавить заказ", font=FONT, bg=COLOR_ACCENT,
-              command=lambda: self.open_order_form(None)).pack(side="right")</pre>
-    <p>В <code>refresh_orders</code> вместо цикла:</p>
-<pre>orders = query(ORDERS_SQL)
-status = self.status_filter.get()
-if status != "Все статусы":
-    orders = [order for order in orders if order["status"] == status]
-for order in orders:
-    self.add_order_card(order)</pre></details></div>
-
-  <h2>Проверь себя</h2>
-  <details class="q"><summary>Что должно попасть в репозиторий?</summary><div>Исходный код (не архив), exe, скрипт БД, картинки и документы.</div></details>
-  <details class="q"><summary>Почему exe не видит базу?</summary><div>Рядом с exe нет shop.db и папки import — их нужно скопировать в dist.</div></details>
-</section>
-
-<!-- ================= 12 ================= -->
-<section id="l12" class="lesson" hidden data-title="День экзамена" data-desc="План по минутам и чек-лист">
-  <div class="eyebrow">Урок 13</div>
-  <h1>День экзамена: план по минутам</h1>
-  <div class="goal"><b>Что узнаешь</b>В каком порядке всё делать, чтобы успеть, и что проверить перед сдачей.</div>
+<!-- ================= 9. ДЕНЬ ЭКЗАМЕНА ================= -->
+<section id="s9" class="lesson" hidden data-title="День экзамена" data-desc="Порядок по минутам, чек-лист">
+  <div class="eyebrow">Шаг 9</div>
+  <h1>День экзамена</h1>
   <h2>Базовый уровень, 3 часа</h2>
   <div class="table-box"><table>
-    <thead><tr><th>Время</th><th>Что делать</th></tr></thead>
+    <thead><tr><th>Время</th><th>Что</th></tr></thead>
     <tbody>
-      <tr><td>0:00–0:05</td><td>Прочитать задание. Открыть руководство по стилю: шрифт, цвета.</td></tr>
-      <tr><td>0:05–0:20</td><td>Excel: заголовки, даты, ошибки, лист состава заказов, CSV UTF-8.</td></tr>
-      <tr><td>0:20–0:35</td><td>DB Browser: schema → импорт → перенос → проверка количества → записать.</td></tr>
-      <tr><td>0:35–0:50</td><td>ER-диаграмма в PDF, скрипт БД. Загрузить в репозиторий.</td></tr>
-      <tr><td>0:50–1:05</td><td>Окно входа, шапка, роли.</td></tr>
-      <tr><td>1:05–1:20</td><td>Список товаров с фото, подсветкой, ценой. Блок-схема. Скриншоты в docx.</td></tr>
-      <tr><td>1:20–1:55</td><td>Поиск, фильтр, сортировка.</td></tr>
-      <tr><td>1:55–2:40</td><td>Форма товара: поля, проверки, фото, одно окно, удаление.</td></tr>
-      <tr><td>2:40–3:00</td><td>Прогнать все роли, поправить сообщения, загрузить всё.</td></tr>
+      <tr><td>0:00–0:05</td><td>Прочитать задание и руководство по стилю (шрифт, цвета).</td></tr>
+      <tr><td>0:05–0:20</td><td>Excel → CSV UTF-8 (шаг 1).</td></tr>
+      <tr><td>0:20–0:35</td><td>DB Browser: таблицы, импорт, перенос, проверка, скрипт (шаг 2).</td></tr>
+      <tr><td>0:35–0:50</td><td>ER-схема в PDF (шаг 3). Push в git.</td></tr>
+      <tr><td>0:50–1:20</td><td>Этапы 1–4: вход и товары. Блок-схема, скриншоты. Push.</td></tr>
+      <tr><td>1:20–1:55</td><td>Этап 5: поиск, фильтр, сортировка.</td></tr>
+      <tr><td>1:55–2:40</td><td>Этапы 6–7: форма, фото, удаление.</td></tr>
+      <tr><td>2:40–3:00</td><td>Прогон всех ролей, push.</td></tr>
     </tbody>
   </table></div>
   <h2>Чек-лист перед сдачей</h2>
   <ul>
-    <li>Программа запускается и не падает ни у одной роли.</li>
-    <li>Заголовок окна меняется на каждом экране.</li>
-    <li>Иконка окна и логотип на месте.</li>
-    <li>ФИО в правом верхнем углу, «Выход» работает.</li>
-    <li>Товар без фото показывает picture.png.</li>
-    <li>Зелёный фон, голубой фон, зачёркнутая цена — проверь глазами.</li>
-    <li>Неправильный ввод в форме даёт понятное сообщение, а не падение.</li>
-    <li>Имена в коде snake_case, нет лишних комментариев.</li>
-    <li>Сданы: shop.db, скрипт .sql, ER-диаграмма PDF, блок-схема PDF, docx со скриншотами, код.</li>
+    <li>Запускается и не падает ни у одной роли.</li>
+    <li>Заголовок окна свой на каждом экране, иконка и логотип есть.</li>
+    <li>ФИО справа вверху, «Выход» работает, «Назад» на заказах.</li>
+    <li>Заглушка picture.png, зелёный/голубой фон, зачёркнутая цена.</li>
+    <li>Плохой ввод → понятное сообщение, а не падение.</li>
+    <li>snake_case, комментарии только там, где неочевидно.</li>
+    <li>Сдано: shop.db, скрипт .sql, ER PDF, блок-схема PDF, docx, код, exe.</li>
   </ul>
-  <div class="trap"><b>Если застрял</b>Не сиди на одной ошибке дольше 5 минут. Закомментируй проблемное место (<code>#</code> в начале строки), чтобы программа запускалась, и иди к следующему пункту. Рабочая программа без одной функции лучше, чем неработающая.</div>
   <h2>Пробный экзамен</h2>
-  <p>За 1–2 дня до экзамена сделай всё с нуля на данных <b>import2</b> (мебель) с таймером. Там те же файлы, только другие товары. Записывай, где застрял, — это и повторяй.</p>
+  <p>За 1–2 дня: всё с нуля по папке <b>import2</b> (мебель) с таймером. Где застрял — то и повторяй.</p>
 </section>
 
-<!-- ================= КОД ================= -->
-<section id="code" class="lesson" hidden data-title="Полный код" data-desc="shop_app.py, schema.sql, migrate.sql" data-extra="1">
-  <div class="eyebrow">Справочник</div>
-  <h1>Полный код</h1>
-  <p class="lead">Готовая рабочая программа. Прокручивай блок вбок и вниз. Учи кусками по урокам 10–12, а не целиком.</p>
-  <h2>shop_app.py</h2>
-<pre class="full"><!--INCLUDE:shop_app.py--></pre>
-  <h2>schema.sql</h2>
-<pre class="full"><!--INCLUDE:schema.sql--></pre>
-  <h2>migrate.sql</h2>
-<pre class="full"><!--INCLUDE:migrate.sql--></pre>
+<!-- ================= ПРОВЕРКА ================= -->
+<section id="quiz" class="lesson" hidden data-title="Проверка" data-extra="1">
+  <div class="eyebrow">Проверка</div>
+  <h1>Проверка с разбором ошибок</h1>
+  <p class="lead">Выбери ответ. Неправильно — сразу увидишь почему. В конце список ошибок, их можно пройти ещё раз.</p>
+  <div class="quiz" id="quizBox" aria-live="polite"></div>
 </section>
 
 <!-- ================= КАРТОЧКИ ================= -->
-<section id="cards" class="lesson" hidden data-title="Карточки" data-desc="Вопросы для заучивания" data-extra="1">
+<section id="cards" class="lesson" hidden data-title="Карточки" data-extra="1">
   <div class="eyebrow">Повторение</div>
-  <h1>Карточки для заучивания</h1>
-  <p class="lead">10 минут каждый день. Сначала ответь в голове, потом открой ответ.</p>
+  <h1>Карточки</h1>
+  <p class="lead">10 минут в день. Ответь в голове, потом открой.</p>
   <div class="deck" aria-live="polite">
     <div class="count"><span id="cardNum"></span>
-      <select id="cardTopic" aria-label="Тема карточек">
-        <option value="all">Все темы</option>
-        <option value="exam">Экзамен</option>
-        <option value="db">База и SQL</option>
-        <option value="py">Python</option>
-        <option value="tk">tkinter и программа</option>
-        <option value="err">Ошибки</option>
-      </select>
+      <select id="cardTopic" aria-label="Тема карточек"></select>
     </div>
     <div class="q" id="cardQ"></div>
     <div class="a" id="cardA" hidden></div>
@@ -1500,86 +1062,84 @@ for order in orders:
   </div>
 </section>
 
+<!-- ================= КОД ================= -->
+<section id="code" class="lesson" hidden data-title="Полный код" data-extra="1">
+  <div class="eyebrow">Справочник</div>
+  <h1>Полный код</h1>
+  <p class="lead">Рабочая программа целиком. Учи по этапам из шага 6.</p>
+  <h2>shop_app.py</h2>
+<pre class="full"><!--INCLUDE:shop_app.py--></pre>
+  <h2>schema.sql</h2>
+<pre class="full"><!--INCLUDE:schema.sql--></pre>
+  <h2>migrate.sql</h2>
+<pre class="full"><!--INCLUDE:migrate.sql--></pre>
+</section>
+
 </div>
 
 <script>
-const CARDS = [
-  ["exam", "Сколько длится базовый уровень ГИА и какие модули в нём?", "3 часа, модули 1, 2 и 3."],
-  ["exam", "Что запрещено на экзамене?", "ИИ, чаты, мессенджеры, GitHub, StackOverflow, соцсети. Интернет только 15 минут без входа на сайты."],
-  ["exam", "Сколько баллов за одно требование?", "2 — полностью, 1 — с ошибками, 0 — не сделано."],
-  ["exam", "Что сдать в модуле 1?", "Базу данных, ER-диаграмму в PDF, скрипт БД (.sql)."],
-  ["exam", "Что сдать в модуле 2?", "Блок-схему в PDF, программу (вход + список товаров), docx со скриншотами."],
-  ["exam", "Какой цвет фона у товара со скидкой больше 15%?", "#2E8B57."],
-  ["exam", "Как показать цену, если есть скидка?", "Старая цена перечёркнута красным, рядом итоговая цена чёрным."],
-  ["exam", "Как выделить товар, которого нет на складе?", "Голубым фоном."],
-  ["exam", "Что показать вместо фото, если его нет?", "picture.png из ресурсов."],
-  ["exam", "Кто может искать, фильтровать и сортировать товары?", "Менеджер и администратор."],
-  ["exam", "Кто может добавлять, менять и удалять товары и заказы?", "Только администратор."],
-  ["exam", "Какой товар нельзя удалить?", "Тот, который есть в заказе."],
-  ["exam", "Какой первый пункт фильтра по поставщику?", "«Все поставщики» — сбрасывает фильтр."],
-  ["exam", "По какому полю сортировка?", "По количеству на складе, по возрастанию и по убыванию."],
-  ["exam", "Какой размер фото товара?", "Не больше 300×200. В БД — путь, старое фото при замене удалить."],
-  ["exam", "По какому ГОСТу блок-схема?", "ГОСТ 19.701-90."],
-  ["exam", "Где должно быть ФИО пользователя?", "В правом верхнем углу."],
-  ["exam", "Что загрузить в git в модуле 4?", "Исходный код (не архив), exe, скрипт БД, картинки и документы."],
-  ["exam", "Какие ошибки спрятаны в данных import?", "Дата 30.02.2025, пробел в «Новый », заказ 2022 года, товары без фото."],
-  ["db", "Что такое первичный ключ?", "Поле, которое однозначно определяет строку и не повторяется (обычно id)."],
-  ["db", "Что такое внешний ключ?", "Поле с id строки из другой таблицы. users.role_id → role.id."],
-  ["db", "3-я нормальная форма простыми словами?", "Один факт в одном месте: повторяющиеся значения вынесены в справочники."],
-  ["db", "Сколько таблиц и связей в нашей базе?", "10 таблиц, 9 связей."],
-  ["db", "Зачем zakaz_tovar?", "Связь «многие ко многим» между заказами и товарами."],
-  ["db", "В какой кодировке сохранять CSV?", "UTF-8."],
-  ["db", "Почему справочники заполняют первыми?", "Товары и заказы ссылаются на их id."],
-  ["db", "Чем опасен DELETE без WHERE?", "Удалит все строки таблицы."],
-  ["db", "Что делает JOIN ... ON?", "Склеивает строки двух таблиц, где совпадают указанные поля."],
-  ["db", "Что делает DISTINCT?", "Убирает повторы."],
-  ["db", "Что делает TRIM?", "Убирает пробелы по краям текста."],
-  ["db", "Как найти товары с «бот» в названии?", "WHERE name LIKE '%бот%'"],
-  ["db", "Как отсортировать по убыванию количества?", "ORDER BY quant DESC"],
-  ["db", "Как перенести поставщиков из imp_tovar в suppl?", "INSERT INTO suppl (suppl) SELECT DISTINCT suppl FROM imp_tovar;"],
-  ["db", "Как сохранить изменения в DB Browser?", "«Записать изменения» (Ctrl+S)."],
-  ["db", "Где в DbVisualizer открыть ER-схему?", "SQLite → Schema → Tables (двойной щелчок) → вкладка References."],
-  ["db", "Что должно быть написано под схемой в DbVisualizer?", "Tables: 10, References: 9."],
-  ["db", "В DbVisualizer таблицы есть, а стрелок нет. Почему?", "В базе нет внешних ключей: забыт REFERENCES в скрипте таблиц."],
-  ["db", "Как сохранить ER-схему в PDF?", "Печать → Microsoft Print to PDF. Или картинку/скриншот в Word → Сохранить как PDF."],
-  ["db", "Как получить скрипт БД в DB Browser?", "Файл → Экспорт → База данных в SQL-файл."],
-  ["py", "Какой стиль имён для Python?", "snake_case: show_login, user_fio. Классы — ShopApp."],
-  ["py", "Как вывести число с двумя знаками после точки?", "f\"{price:.2f}\""],
-  ["py", "Что будет при int(\"abc\")?", "ValueError. Ловим через try / except."],
-  ["py", "Как превратить \"19,5\" в число?", "float(text.replace(\",\", \".\"))"],
-  ["py", "Как убрать пробелы по краям строки?", "text.strip()"],
-  ["py", "Как перебрать список?", "for item in items:"],
-  ["py", "Зачем self?", "Хранить данные объекта между функциями: self.user_fio, self.user_role."],
-  ["py", "Как проверить существующую дату?", "datetime.strptime(text, \"%Y-%m-%d\") — на 2025-02-30 будет ValueError."],
-  ["tk", "command=self.login или command=self.login()?", "Без скобок. Со скобками функция сработает сразу при запуске."],
-  ["tk", "Почему картинка может пропасть?", "Не сохранили ссылку (self.logo, список self.product_images)."],
-  ["tk", "Как скрыть пароль?", "tk.Entry(..., show=\"*\")"],
-  ["tk", "Как прижать элемент вправо?", ".pack(side=\"right\")"],
-  ["tk", "Как показать ошибку / предупреждение / информацию?", "messagebox.showerror / showwarning / showinfo"],
-  ["tk", "Как спросить «Да/Нет»?", "messagebox.askyesno(\"Заголовок\", \"Текст\")"],
-  ["tk", "Как сделать зачёркнутый текст?", "Шрифт (\"Times New Roman\", 12, \"overstrike\")"],
-  ["tk", "Как сделать поиск без кнопки?", "StringVar + trace_add(\"write\", ...)"],
-  ["tk", "Как отреагировать на выбор в Combobox?", "bind(\"<<ComboboxSelected>>\", ...)"],
-  ["tk", "Как запретить печатать в Combobox?", "state=\"readonly\""],
-  ["tk", "Как не дать открыть второе окно редактирования?", "Хранить его в self.form_window и проверять winfo_exists()."],
-  ["tk", "Как сменить экран в одном окне?", "clear_window() удаляет все виджеты, потом рисуем новый экран."],
-  ["tk", "Зачем Canvas в списке товаров?", "Только Canvas умеет прокручиваться; Frame с карточками кладём внутрь него."],
-  ["tk", "Как сделать поле только для чтения?", "entry.configure(state=\"readonly\")"],
-  ["err", "С какой строки читать Traceback?", "С последней: тип ошибки и что не так. Строкой выше — номер строки в файле."],
-  ["err", "IndentationError: expected an indented block", "После if / for / def нет отступа в 4 пробела."],
-  ["err", "SyntaxError: expected ':'", "Забыто двоеточие в конце строки с if / def / for / class."],
-  ["err", "NameError: name '...' is not defined", "Опечатка в имени, переменной ещё нет или забыт self."],
-  ["err", "AttributeError: 'ShopApp' object has no attribute 'search_var'", "self.search_var ещё не создан (например, у гостя нет панели поиска)."],
-  ["err", "TypeError: ... takes 0 positional arguments but 1 was given", "Забыт self в def внутри класса или event в lambda для bind."],
-  ["err", "IndexError: list index out of range", "rows[0] у пустого списка. Сначала if not rows:"],
-  ["err", "sqlite3.OperationalError: no such table: tovar", "Программа запущена не из своей папки и создала пустую shop.db. Запускай из папки программы."],
-  ["err", "sqlite3.IntegrityError: UNIQUE constraint failed: tovar.art", "Такой артикул уже есть. Поймать и показать сообщение."],
-  ["err", "sqlite3.OperationalError: database is locked", "DB Browser держит несохранённые изменения: записать или закрыть."],
-  ["err", "TclError: cannot use geometry manager \"pack\" inside ...", "В одном контейнере смешаны pack и grid."],
-  ["err", "TclError: image \"pyimage2\" does not exist", "Два tk.Tk() в программе. Второе окно — tk.Toplevel."],
-  ["err", "Кнопка сработала сама при запуске. Почему?", "command=функция() со скобками. Нужно без скобок."],
-  ["tk", "Как собрать exe?", "pyinstaller --onefile --windowed --icon=import/Icon.ico shop_app.py, рядом с exe положить shop.db и import."]
+const TOPICS = { excel: "Excel", db: "DB Browser и SQL", viz: "DbVisualizer", py: "Python", app: "Программа", err: "Ошибки" };
+
+// [тема, вопрос, правильный ответ, неправильные ответы, почему]
+const QUIZ = [
+  ["excel", "В каком формате сохранить таблицы для DB Browser?", "CSV UTF-8", ["Обычный CSV (разделители — запятые)", "XLSX", "TXT"], "Обычный CSV пишет в старой кодировке: русские буквы станут знаками вопроса."],
+  ["excel", "Зачем заголовки столбцов писать латиницей (art, name…)?", "Чтобы писать SQL без кавычек и ошибок", ["Иначе Excel не сохранит CSV", "Так требует ГОСТ", "Чтобы файл стал меньше"], "Русские имена столбцов в SQL надо брать в кавычки — легко ошибиться."],
+  ["excel", "Как записать дату для базы?", "2025-02-27", ["27.02.2025", "27/02/25", "27 февраля 2025"], "Формат ГГГГ-ММ-ДД правильно сортируется и проверяется в программе."],
+  ["excel", "В файле заказов дата 30.02.2025. Что делать?", "Исправить на существующую и записать в отчёт", ["Оставить как есть", "Удалить весь заказ", "Поставить 0"], "Ошибки кладут специально. Эксперт проверяет, заметил ли ты."],
+  ["excel", "В ячейке «А112Т4, 2, F635R4, 2». Что делать?", "Разложить на отдельный лист zak_id, art, quant", ["Оставить одной строкой", "Удалить количества", "Перенести в столбец цены"], "Одно значение — одна ячейка. Это 1-я нормальная форма."],
+  ["excel", "В файле пунктов выдачи нет заголовка. Что делать?", "Вставить строку сверху и написать addr", ["Ничего, DB Browser сам поймёт", "Удалить первую строку", "Отсортировать по алфавиту"], "Без заголовка первая строка с адресом станет именем столбца, а один адрес пропадёт."],
+  ["excel", "Можно ли сортировать строки в файле пунктов выдачи?", "Нет: номер строки — это номер пункта в заказах", ["Да, по алфавиту удобнее", "Да, по индексу", "Только по городу"], "Заказ хранит номер пункта. Сдвинешь строки — заказы уедут на чужие адреса."],
+  ["excel", "Как проверить готовый CSV?", "Открыть в Блокноте: русские буквы читаются, заголовки латиницей", ["Открыть в Paint", "Посмотреть размер файла", "Никак"], "Блокнот показывает файл как есть — сразу видно кодировку и разделитель."],
+  ["excel", "Почему артикулы нельзя перепечатывать руками?", "В них бывают русские буквы, похожие на латинские", ["Excel запрещает", "Сломается формат ячейки", "Станут длиннее"], "«А» русская и «A» латинская выглядят одинаково, но для базы разные — товар не найдётся."],
+  ["db", "Что такое первичный ключ?", "Поле, которое не повторяется и определяет строку (id)", ["Пароль от базы", "Первый столбец любой таблицы", "Связь с другой таблицей"], "PRIMARY KEY — уникальный номер строки."],
+  ["db", "Что такое внешний ключ?", "Поле с id строки из другой таблицы", ["Ключ шифрования", "Столбец с паролем", "Любое числовое поле"], "Пример: users.role_id → role.id. На схеме это стрелка."],
+  ["db", "Что делает AUTOINCREMENT?", "Ставит номер сам: 1, 2, 3…", ["Увеличивает цену", "Считает строки", "Сортирует таблицу"], "Номер новой строки база вычисляет сама."],
+  ["db", "В каком порядке переносить данные?", "Сначала справочники, потом таблицы со ссылками", ["Сначала заказы", "Порядок не важен", "По алфавиту таблиц"], "Товар ссылается на поставщика. Пока поставщика нет, товар не вставить."],
+  ["db", "После INSERT … SELECT в tovar 28 строк, а в Excel 30. Почему?", "JOIN не нашёл пару: опечатка или пробел в названии", ["DB Browser режет данные", "Так и должно быть", "Нужно перезапустить"], "JOIN молча выкидывает строки без пары. Ищи расхождение в Excel."],
+  ["db", "Закрыл DB Browser — база пустая. Что забыл?", "Нажать «Записать изменения»", ["Нажать ▶", "Импортировать ещё раз", "Сохранить CSV"], "Ctrl+S в DB Browser — запись в файл. Без неё всё в памяти."],
+  ["db", "Как получить скрипт БД?", "Файл → Экспорт → База данных в SQL-файл", ["Скопировать shop.db", "Скриншот таблиц", "Файл → Импорт"], "Скрипт — текстовый .sql с таблицами и данными."],
+  ["db", "Что делает DISTINCT?", "Убирает повторы", ["Сортирует", "Считает строки", "Удаляет таблицу"], "SELECT DISTINCT suppl — каждый поставщик один раз."],
+  ["db", "Зачем таблица zakaz_tovar?", "Связь «многие ко многим» заказов и товаров", ["Хранить пароли", "Для поиска", "Это временная таблица"], "В заказе много товаров, товар во многих заказах."],
+  ["db", "Чем опасен DELETE FROM tovar; без WHERE?", "Удалит все товары", ["Ничем", "Удалит одну строку", "Выдаст ошибку"], "Без WHERE условие — «все строки»."],
+  ["db", "Ошибка: INSERT INTO suppl (suppl) SELECT suppl FROM imp_tovar; — что не так?", "Нет DISTINCT: поставщики повторятся", ["Нет WHERE", "Нужен JOIN", "Всё правильно"], "У 30 товаров 2 поставщика. Без DISTINCT будет 30 строк и ошибка UNIQUE."],
+  ["db", "Какой тип для цены?", "REAL", ["TEXT", "INTEGER", "DATE"], "Цена с копейками — дробное число."],
+  ["db", "В предпросмотре импорта всё в одном столбце. Что делать?", "Поменять разделитель на ; или ,", ["Пересохранить в XLSX", "Удалить заголовки", "Импортировать всё равно"], "Русский Excel часто ставит точку с запятой."],
+  ["db", "Что делает TRIM(status)?", "Убирает пробелы по краям", ["Обрезает до 5 символов", "Делает заглавными", "Удаляет столбец"], "«Новый » и «Новый» станут одинаковыми."],
+  ["viz", "Где в DbVisualizer открыть ER-схему?", "Schema → Tables (двойной щелчок) → вкладка References", ["Вкладка Tables", "Меню File → Print", "Вкладка Data"], "References — это схема связей."],
+  ["viz", "Что должно быть внизу схемы для нашей базы?", "Tables: 10, References: 9", ["Tables: 9, References: 10", "Tables: 15", "References: 0"], "10 таблиц, 9 внешних ключей."],
+  ["viz", "Таблицы есть, а стрелок нет. Почему?", "В базе нет внешних ключей (REFERENCES)", ["Не та раскладка", "Мало данных", "Не скачан драйвер"], "Стрелки рисуются только по внешним ключам."],
+  ["viz", "Как сохранить схему в PDF?", "Печать → Microsoft Print to PDF", ["Ctrl+S", "Экспорт в CSV", "Переименовать файл в .pdf"], "Запасной путь — скриншот в Word и «Сохранить как» PDF."],
+  ["viz", "На схеме видны таблицы imp_users и другие. Почему?", "Не выполнены DROP TABLE imp_…", ["Так и надо", "Ошибка DbVisualizer", "Не тот драйвер"], "Временные таблицы надо удалить после переноса."],
+  ["py", "Какой стиль имён для Python?", "snake_case: show_login, user_fio", ["CamelCase: ShowLogin", "kebab-case: show-login", "Любой"], "Требование задания: snake_case для Python."],
+  ["py", "Что выведет f\"{4990.5:.2f}\"?", "4990.50", ["4990.5", "4991", "4990,50"], ".2f — ровно два знака после точки."],
+  ["py", "Что будет при int(\"abc\")?", "ValueError", ["0", "None", "abc"], "Текст не превращается в число. Ловим через try / except ValueError."],
+  ["py", "Какой номер у первого элемента списка?", "0", ["1", "-1", "first"], "Нумерация с нуля."],
+  ["py", "Зачем self в классе?", "Хранить данные объекта между методами", ["Для красоты", "Чтобы ускорить", "Это комментарий"], "self.user_role помнит роль, пока открыто окно."],
+  ["py", "Что не так: if discount > 15  (следующая строка с отступом)", "Нет двоеточия в конце", ["Нужно ==", "Нельзя число 15", "Всё правильно"], "После if, def, for, class — двоеточие."],
+  ["app", "command=self.login() — что будет?", "Функция сработает при запуске, кнопка не будет работать", ["Всё правильно", "Ошибка при нажатии", "Окно закроется"], "Нужно без скобок: command=self.login."],
+  ["app", "Картинка в окне пустая, ошибки нет. Почему?", "Не сохранили ссылку на картинку", ["Неверный путь", "Нужен PNG", "Мало памяти"], "Без self.logo / списка картинок Python удаляет объект."],
+  ["app", "Скидка 20%. Какой фон?", "#2E8B57", ["Голубой", "Белый", "Красный"], "Больше 15% — #2E8B57."],
+  ["app", "Остаток 0. Какой фон?", "Голубой", ["#2E8B57", "Белый", "Серый"], "Нет на складе — голубой."],
+  ["app", "Как показать цену со скидкой?", "Старая перечёркнута красным, рядом новая чёрным", ["Только новая", "Обе одинаковые", "Старая зелёным"], "Шрифт с overstrike, fg=\"red\"; новая fg=\"black\"."],
+  ["app", "Нет фото товара. Что показать?", "picture.png из ресурсов", ["Пустое место", "Логотип", "Надпись «нет фото»"], "load_photo подставляет заглушку."],
+  ["app", "Как сделать поиск без кнопки «Найти»?", "StringVar + trace_add(\"write\", …)", ["Кнопка с command", "Таймер", "Никак"], "trace_add вызывает обновление при каждой букве."],
+  ["app", "Первый пункт фильтра по поставщику?", "«Все поставщики»", ["Пусто", "Первый поставщик по алфавиту", "«Выберите»"], "Его выбор сбрасывает фильтр."],
+  ["app", "Кто видит поиск, фильтр, сортировку?", "Менеджер и администратор", ["Все", "Только админ", "Гость и клиент"], "Гость и клиент — только просмотр."],
+  ["app", "Можно удалить товар, который есть в заказе?", "Нет, показать ошибку", ["Да, вместе с заказом", "Да, молча", "Только админу"], "Проверка: SELECT COUNT(*) FROM zakaz_tovar WHERE tovar_id = ?"],
+  ["app", "Как не дать открыть второе окно редактирования?", "Хранить окно в self.form_window и проверять winfo_exists()", ["grab_set на главном окне", "Закрывать главное окно", "Никак"], "Если окно живо — предупреждение и lift()."],
+  ["app", "Какой размер фото товара?", "Не больше 300×200", ["1920×1080", "100×100", "Любой"], "image.thumbnail((300, 200))."],
+  ["app", "Где ФИО пользователя?", "В правом верхнем углу", ["Внизу", "В заголовке окна", "Слева"], "pack(side=\"right\") в шапке."],
+  ["app", "Как скрыть пароль звёздочками?", "tk.Entry(..., show=\"*\")", ["hide=True", "password=True", "type=\"password\""], "Параметр show."],
+  ["app", "exe не видит базу. Почему?", "Рядом с exe нет shop.db и папки import", ["exe не умеет SQLite", "Нужен интернет", "Неверная иконка"], "Скопируй их в dist рядом с exe."],
+  ["err", "sqlite3.OperationalError: no such table: tovar, а таблица есть. Почему?", "Запущено не из папки программы — создалась пустая shop.db", ["Таблица удалена", "Нет Pillow", "Ошибка Python"], "connect() создаёт пустой файл, если не нашёл. Запускай из папки программы."],
+  ["err", "С какой строки читать Traceback?", "С последней", ["С первой", "С середины", "Любой"], "Последняя — тип ошибки и что не так. Выше — номер строки."],
+  ["err", "TclError: cannot use geometry manager \"pack\" inside … Причина?", "pack и grid в одном контейнере", ["Нет mainloop", "Две картинки", "Нет шрифта"], "В одном Frame — только pack или только grid."],
+  ["err", "TypeError: … takes 0 positional arguments but 1 was given. Что забыто?", "self в def или event в lambda", ["Двоеточие", "import", "return"], "Методу класса первым всегда передаётся self."],
+  ["err", "database is locked. Что делать?", "Записать изменения в DB Browser или закрыть его", ["Удалить базу", "Перезагрузить ПК", "Переименовать файл"], "DB Browser держит файл, пока есть несохранённые изменения."]
 ];
+
+// Карточки: [тема, вопрос, ответ]
+const CARDS = QUIZ.map(([topic, question, answer, , why]) => [topic, question, answer + ". " + why]);
 
 const $ = id => document.getElementById(id);
 const lessons = [...document.querySelectorAll("section.lesson[data-title]")];
@@ -1589,15 +1149,14 @@ const store = {
   set(key, value) { try { localStorage.setItem(key, value); } catch (e) {} }
 };
 
-// Галочка «Урок пройден» и кнопки в конце каждого урока
 mainLessons.forEach((section, i) => {
   const next = mainLessons[i + 1];
   const finish = document.createElement("div");
   finish.className = "finish";
   finish.innerHTML =
-    `<label><input type="checkbox" id="done_${section.id}"> Урок пройден</label>` +
+    `<label><input type="checkbox" id="done_${section.id}"> Шаг пройден</label>` +
     `<div class="nav-btns">${i > 0 ? `<a class="btn" href="#${mainLessons[i - 1].id}">← Назад</a>` : ""}` +
-    (next ? `<a class="btn primary" href="#${next.id}">Урок ${i + 1} →</a>` : `<a class="btn primary" href="#cards">Карточки →</a>`) +
+    (next ? `<a class="btn primary" href="#${next.id}">Шаг ${i + 1} →</a>` : `<a class="btn primary" href="#quiz">Проверка →</a>`) +
     `</div>`;
   section.appendChild(finish);
   const box = finish.querySelector("input");
@@ -1619,7 +1178,7 @@ function renderToc() {
     toc.appendChild(li);
   });
   $("progressBar").style.width = (done / mainLessons.length * 100) + "%";
-  $("progressText").textContent = `Пройдено уроков: ${done} из ${mainLessons.length}`;
+  $("progressText").textContent = `Пройдено шагов: ${done} из ${mainLessons.length}`;
 }
 
 function showView() {
@@ -1634,18 +1193,104 @@ function showView() {
     target.hidden = false;
     $("bar").hidden = false;
     const i = mainLessons.indexOf(target);
-    $("barPos").textContent = i >= 0 ? `Урок ${i} из ${mainLessons.length - 1}` : target.dataset.title;
+    $("barPos").textContent = i >= 0 ? `Шаг ${i} из ${mainLessons.length - 1}` : target.dataset.title;
     const next = i >= 0 ? mainLessons[i + 1] : null;
     $("barNext").hidden = !next;
     if (next) $("barNext").href = "#" + next.id;
-    if (i >= 0) store.set("last_lesson", target.id);
   }
   window.scrollTo(0, 0);
 }
 window.addEventListener("hashchange", showView);
-showView();
 
-// Карточки
+// ---------- Проверка ----------
+const quiz = { list: [], pos: 0, score: 0, mistakes: [], topic: "all" };
+
+function shuffle(items) {
+  const copy = items.slice();
+  for (let i = copy.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [copy[i], copy[j]] = [copy[j], copy[i]]; }
+  return copy;
+}
+
+function escapeHtml(text) {
+  return text.replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+}
+
+function startQuiz(list) {
+  quiz.list = shuffle(list);
+  quiz.pos = 0; quiz.score = 0; quiz.mistakes = [];
+  renderQuestion();
+}
+
+function quizStartScreen() {
+  const options = Object.entries(TOPICS).map(([key, name]) => {
+    const n = QUIZ.filter(q => q[0] === key).length;
+    return `<option value="${key}"${quiz.topic === key ? " selected" : ""}>${name} (${n})</option>`;
+  }).join("");
+  const best = store.get("quiz_best_" + quiz.topic);
+  $("quizBox").innerHTML =
+    `<div class="top"><span>Вопросов всего: ${QUIZ.length}</span>${best ? `<span>Лучший результат: ${best}</span>` : ""}</div>` +
+    `<p style="margin-top:12px"><label for="quizTopic">Тема</label></p>` +
+    `<p><select id="quizTopic"><option value="all"${quiz.topic === "all" ? " selected" : ""}>Все темы (${QUIZ.length})</option>${options}</select></p>` +
+    `<div class="row-btns"><button class="b primary" id="quizGo" type="button">Начать</button></div>`;
+  $("quizTopic").addEventListener("change", e => { quiz.topic = e.target.value; quizStartScreen(); });
+  $("quizGo").addEventListener("click", () => startQuiz(QUIZ.filter(q => quiz.topic === "all" || q[0] === quiz.topic)));
+}
+
+function renderQuestion() {
+  const item = quiz.list[quiz.pos];
+  const [topic, question, right, wrong, why] = item;
+  const options = shuffle([right, ...wrong]);
+  $("quizBox").innerHTML =
+    `<div class="top"><span>${TOPICS[topic]}</span><span>Вопрос ${quiz.pos + 1} из ${quiz.list.length} · верно ${quiz.score}</span></div>` +
+    `<div class="q">${escapeHtml(question)}</div>` +
+    `<div class="opts">${options.map((o, i) => `<button class="opt" type="button" data-i="${i}">${escapeHtml(o)}</button>`).join("")}</div>` +
+    `<div id="quizWhy"></div>`;
+  $("quizBox").querySelectorAll(".opt").forEach(button => {
+    button.addEventListener("click", () => {
+      const chosen = options[+button.dataset.i];
+      const ok = chosen === right;
+      if (ok) quiz.score++; else quiz.mistakes.push({ item, chosen });
+      $("quizBox").querySelectorAll(".opt").forEach(b => {
+        b.disabled = true;
+        if (options[+b.dataset.i] === right) b.classList.add("right");
+        else if (b === button) b.classList.add("wrong");
+      });
+      const last = quiz.pos === quiz.list.length - 1;
+      $("quizWhy").innerHTML =
+        `<div class="why${ok ? "" : " bad"}"><b>${ok ? "Верно." : "Неверно. Правильно: " + escapeHtml(right) + "."}</b><br>${escapeHtml(why)}</div>` +
+        `<div class="row-btns"><button class="b primary" id="quizNext" type="button">${last ? "Итог" : "Дальше"}</button></div>`;
+      $("quizNext").addEventListener("click", () => { if (last) renderResult(); else { quiz.pos++; renderQuestion(); } });
+      $("quizNext").focus();
+    });
+  });
+}
+
+function renderResult() {
+  const total = quiz.list.length;
+  const result = `${quiz.score} из ${total}`;
+  const key = "quiz_best_" + quiz.topic;
+  const prev = store.get(key);
+  if (!prev || +prev.split(" ")[0] < quiz.score) store.set(key, result);
+  const percent = Math.round(quiz.score / total * 100);
+  $("quizBox").innerHTML =
+    `<div class="result">${result} (${percent}%)</div>` +
+    `<p>${percent >= 90 ? "Готов. Повтори через день, чтобы закрепить." : percent >= 70 ? "Неплохо. Разбери ошибки и пройди их ещё раз." : "Вернись к шагам по темам ошибок, потом пройди снова."}</p>` +
+    (quiz.mistakes.length ? `<h3>Ошибки</h3><ul class="mist">${quiz.mistakes.map(m =>
+      `<li><b>${escapeHtml(m.item[1])}</b>Ты ответил: ${escapeHtml(m.chosen)}<br>Правильно: ${escapeHtml(m.item[2])}. ${escapeHtml(m.item[4])}</li>`).join("")}</ul>` : "") +
+    `<div class="row-btns" style="margin-top:12px">` +
+    (quiz.mistakes.length ? `<button class="b primary" id="quizRetry" type="button">Пройти ошибки ещё раз</button>` : "") +
+    `<button class="b" id="quizAgain" type="button">Выбрать тему</button></div>`;
+  if (quiz.mistakes.length) {
+    const retry = quiz.mistakes.map(m => m.item);
+    $("quizRetry").addEventListener("click", () => startQuiz(retry));
+  }
+  $("quizAgain").addEventListener("click", quizStartScreen);
+}
+quizStartScreen();
+
+// ---------- Карточки ----------
+$("cardTopic").innerHTML = `<option value="all">Все темы</option>` +
+  Object.entries(TOPICS).map(([key, name]) => `<option value="${key}">${name}</option>`).join("");
 let deck = [], pos = 0;
 function buildDeck() {
   const topic = $("cardTopic").value;
@@ -1664,10 +1309,9 @@ function renderCard() {
 $("btnShow").addEventListener("click", () => { $("cardA").hidden = false; $("btnShow").hidden = true; });
 $("btnNext").addEventListener("click", () => { pos = (pos + 1) % deck.length; renderCard(); });
 $("btnPrev").addEventListener("click", () => { pos = (pos - 1 + deck.length) % deck.length; renderCard(); });
-$("btnShuffle").addEventListener("click", () => {
-  for (let i = deck.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [deck[i], deck[j]] = [deck[j], deck[i]]; }
-  pos = 0; renderCard();
-});
+$("btnShuffle").addEventListener("click", () => { deck = shuffle(deck); pos = 0; renderCard(); });
 $("cardTopic").addEventListener("change", buildDeck);
 buildDeck();
+
+showView();
 </script>
