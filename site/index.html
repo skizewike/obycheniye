@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2E8B57">
+<link rel="icon" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="manifest" href="manifest.json">
+<style>
+:root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; font: 14px system-ui, sans-serif; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+</style>
+<title>Демоэкзамен 09.02.07</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=Unbounded:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one narrow reading column, sticky section chips on top, flashcard deck at the end */
+:root {
+  --bg: #F6F8F7;
+  --surface: #FFFFFF;
+  --fg: #17211C;
+  --muted: #5B6862;
+  --line: #DCE3DF;
+  --accent: #2E8B57;          /* цвет из задания: скидка > 15% */
+  --accent-soft: #E3F1E9;
+  --sky: #CFE9F7;             /* цвет из задания: нет на складе */
+  --sky-fg: #0E4A6B;
+  --warn: #B4401F;
+  --code-bg: #10201A;
+  --code-fg: #E4F0E9;
+  --font-display: "Unbounded", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Golos Text", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", Consolas, "Courier New", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1513; --surface: #17201C; --fg: #E6EEEA; --muted: #9AA9A2; --line: #2A3631;
+    --accent: #4CC184; --accent-soft: #1C3428; --sky: #163447; --sky-fg: #A9DAF5; --warn: #F08A68;
+    --code-bg: #0A0F0D; --code-fg: #DCEBE3; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F1513; --surface: #17201C; --fg: #E6EEEA; --muted: #9AA9A2; --line: #2A3631;
+  --accent: #4CC184; --accent-soft: #1C3428; --sky: #163447; --sky-fg: #A9DAF5; --warn: #F08A68;
+  --code-bg: #0A0F0D; --code-fg: #DCEBE3; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body);
+  font-size: 17px; line-height: 1.6;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+.wrap {
+  max-width: 720px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 64px;
+}
+header.top { padding-block: 28px 8px; }
+.eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+h1 { font-family: var(--font-display); font-size: 28px; line-height: 1.2; margin: 6px 0 8px; text-wrap: balance; }
+h2 { font-family: var(--font-display); font-size: 21px; line-height: 1.25; margin: 0 0 12px; text-wrap: balance; }
+h3 { font-size: 17px; margin: 22px 0 8px; font-weight: 600; }
+p { margin: 0 0 12px; }
+.lead { color: var(--muted); }
+
+nav.chips {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--surface); border-bottom: 1px solid var(--line);
+}
+nav.chips .row {
+  max-width: 720px; margin: 0 auto; display: flex; gap: 8px; overflow-x: auto;
+  padding-block: 10px; scrollbar-width: none;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+nav.chips a {
+  flex: none; text-decoration: none; color: var(--fg); font-size: 14px; font-weight: 500;
+  border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; background: var(--bg);
+}
+nav.chips a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+section { padding-top: 32px; scroll-margin-top: 64px; }
+.rule { border: 0; border-top: 1px solid var(--line); margin: 32px 0 0; }
+
+.table-box { overflow-x: auto; margin: 0 0 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 15px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+tr:last-child td { border-bottom: 0; }
+
+.key { background: var(--accent-soft); border-left: 3px solid var(--accent); padding: 12px 14px; border-radius: 0 8px 8px 0; margin: 0 0 16px; }
+.trap { border-left: 3px solid var(--warn); padding: 4px 0 4px 14px; margin: 0 0 16px; }
+.trap b { color: var(--warn); }
+
+ul.check { list-style: none; padding: 0; margin: 0 0 8px; display: grid; gap: 4px; }
+ul.check label { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; padding: 4px 0; }
+ul.check input { width: 20px; height: 20px; margin-top: 3px; accent-color: var(--accent); flex: none; }
+ul.check input:checked + span { color: var(--muted); text-decoration: line-through; }
+
+details.module { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; margin: 0 0 10px; }
+details.module summary { cursor: pointer; padding: 14px 16px; font-weight: 600; display: flex; justify-content: space-between; gap: 12px; list-style: none; }
+details.module summary::-webkit-details-marker { display: none; }
+details.module summary .meta { color: var(--muted); font-weight: 400; font-size: 14px; white-space: nowrap; }
+details.module .body { padding: 0 16px 12px; }
+
+pre { background: var(--code-bg); color: var(--code-fg); font-family: var(--font-mono); font-size: 13.5px; line-height: 1.55; padding: 14px 16px; border-radius: 10px; overflow-x: auto; margin: 0 0 14px; }
+code { font-family: var(--font-mono); font-size: .88em; }
+p code, li code, td code { background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; }
+.c { color: #8FB8A2; }
+
+.swatches { display: grid; gap: 8px; margin: 0 0 16px; }
+.swatch { border-radius: 8px; padding: 10px 14px; font-size: 15px; border: 1px solid var(--line); }
+.sw-green { background: #2E8B57; color: #fff; }
+.sw-blue { background: var(--sky); color: var(--sky-fg); }
+.sw-price s { color: #D0302B; }
+
+/* Flashcards */
+.deck { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
+.deck .count { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; display: flex; justify-content: space-between; gap: 8px; }
+.deck .q { font-family: var(--font-display); font-size: 19px; line-height: 1.35; margin: 14px 0; min-height: 3.2em; text-wrap: balance; }
+.deck .a { border-top: 1px dashed var(--line); padding-top: 12px; margin-bottom: 14px; }
+.deck .btns { display: flex; flex-wrap: wrap; gap: 8px; }
+button {
+  font: inherit; font-size: 15px; font-weight: 500; border-radius: 8px; padding: 10px 14px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--bg); color: var(--fg);
+}
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+:root[data-theme="dark"] button.primary { color: #0F1513; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) button.primary { color: #0F1513; } }
+.deck select { font: inherit; font-size: 15px; padding: 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+
+</head>
+<body>
+<nav class="chips" aria-label="Разделы">
+  <div class="row">
+    <a href="#exam">Экзамен</a>
+    <a href="#modules">Модули</a>
+    <a href="#db">База</a>
+    <a href="#sql">SQL</a>
+    <a href="#login">Шаг 1: вход</a>
+    <a href="#traps">Ловушки</a>
+    <a href="#cards">Карточки</a>
+  </div>
+</nav>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">КОД 09.02.07-2-2026 · Программист</div>
+    <h1>Демоэкзамен: магазин обуви</h1>
+    <p class="lead">Python + tkinter + SQLite. Шпаргалка для повторения с телефона: читай разделы по порядку, в конце проверь себя карточками.</p>
+  </header>
+
+  <section id="exam">
+    <h2>Экзамен коротко</h2>
+    <div class="key"><b>Главное правило:</b> на экзамене запрещены ИИ, чаты, GitHub и StackOverflow. Интернет есть только 15 минут на общем компьютере, за экраном следят. Всё нужно уметь руками.</div>
+    <div class="table-box">
+      <table>
+        <thead><tr><th>Уровень</th><th>Время</th><th>Модули</th><th>Баллы</th></tr></thead>
+        <tbody>
+          <tr><td>ПА (промежуточная)</td><td>1 ч 30 мин</td><td>1, 2</td><td>25</td></tr>
+          <tr><td>ГИА базовый</td><td>3 ч</td><td>1, 2, 3</td><td>50</td></tr>
+          <tr><td>ГИА профильный</td><td>4 ч</td><td>1–4</td><td>75 + 25</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>За каждое действие: <b>2 балла</b> выполнено полностью, <b>1 балл</b> с ошибками, <b>0</b> не сделано. Больше всего баллов в модуле 3 (24) и модуле 4 (23).</p>
+    <p>Тактика: делай модули по порядку и сохраняй результат после каждого. Программа, которая запускается, лучше красивой, которая падает.</p>
+  </section>
+
+  <section id="modules">
+    <h2>Что сдать по модулям</h2>
+    <p class="lead">Отмечай галочками, что уже умеешь. Отметки сохраняются в этом браузере.</p>
+
+    <details class="module" open>
+      <summary>Модуль 1. База данных <span class="meta">50 мин · 10 б.</span></summary>
+      <div class="body"><ul class="check">
+        <li><label><input type="checkbox" id="m1a"><span>Таблицы в 3-й нормальной форме: роли, поставщики, производители, категории, статусы, пункты выдачи вынесены в справочники</span></label></li>
+        <li><label><input type="checkbox" id="m1b"><span>Первичные ключи <code>PRIMARY KEY</code> и внешние <code>REFERENCES</code></span></label></li>
+        <li><label><input type="checkbox" id="m1c"><span>Имена латиницей, маленькими буквами, в одном стиле</span></label></li>
+        <li><label><input type="checkbox" id="m1d"><span>Импорт данных из xlsx (папка import)</span></label></li>
+        <li><label><input type="checkbox" id="m1e"><span>ER-диаграмма в PDF: таблицы, связи, ключи</span></label></li>
+        <li><label><input type="checkbox" id="m1f"><span>Скрипт БД, файл <code>.sql</code></span></label></li>
+      </ul></div>
+    </details>
+
+    <details class="module">
+      <summary>Модуль 2. Алгоритм и приложение <span class="meta">40 мин · 15 б.</span></summary>
+      <div class="body"><ul class="check">
+        <li><label><input type="checkbox" id="m2a"><span>Блок-схема по ГОСТ 19.701-90 в PDF</span></label></li>
+        <li><label><input type="checkbox" id="m2b"><span>Стиль из Приложения 3, иконка окна, логотип на главной форме</span></label></li>
+        <li><label><input type="checkbox" id="m2c"><span>Имена в коде snake_case, одна команда в строке</span></label></li>
+        <li><label><input type="checkbox" id="m2d"><span>Окно входа: логин и пароль из БД, кнопка «Войти как гость»</span></label></li>
+        <li><label><input type="checkbox" id="m2e"><span>ФИО в правом верхнем углу, кнопка «Выход» к окну входа</span></label></li>
+        <li><label><input type="checkbox" id="m2f"><span>Список товаров со всеми полями, фото или picture.png</span></label></li>
+        <li><label><input type="checkbox" id="m2g"><span>Подсветка строк по скидке и остатку (см. ниже)</span></label></li>
+        <li><label><input type="checkbox" id="m2h"><span>Документ .docx со скриншотами работы</span></label></li>
+      </ul>
+      <div class="swatches">
+        <div class="swatch sw-green">Скидка больше 15% → фон <b>#2E8B57</b></div>
+        <div class="swatch sw-price">Есть скидка → <s>4990 ₽</s> <b>4840,30 ₽</b> (старая перечёркнута красным, новая чёрным)</div>
+        <div class="swatch sw-blue">Количество на складе 0 → строка голубая</div>
+      </div></div>
+    </details>
+
+    <details class="module">
+      <summary>Модуль 3. Интерфейс и форма товара <span class="meta">1 ч 30 мин · 25 б.</span></summary>
+      <div class="body"><ul class="check">
+        <li><label><input type="checkbox" id="m3a"><span>Кнопка «Назад» и свой заголовок на каждом окне</span></label></li>
+        <li><label><input type="checkbox" id="m3b"><span>Сообщения: ошибка / предупреждение / информация, с заголовком и понятным текстом «что не так и как исправить»</span></label></li>
+        <li><label><input type="checkbox" id="m3c"><span>Менеджер и админ: поиск по всем текстовым полям сразу при вводе</span></label></li>
+        <li><label><input type="checkbox" id="m3d"><span>Сортировка по количеству на складе (по возрастанию и убыванию)</span></label></li>
+        <li><label><input type="checkbox" id="m3e"><span>Фильтр по поставщику, первый пункт «Все поставщики»</span></label></li>
+        <li><label><input type="checkbox" id="m3f"><span>Поиск, фильтр и сортировка работают вместе, без кнопки «Найти»</span></label></li>
+        <li><label><input type="checkbox" id="m3g"><span>Админ: «Добавить товар» и клик по товару для редактирования в отдельном окне</span></label></li>
+        <li><label><input type="checkbox" id="m3h"><span>Категория и производитель в выпадающих списках; цена ≥ 0 с копейками; количество ≥ 0</span></label></li>
+        <li><label><input type="checkbox" id="m3i"><span>ID скрыт при добавлении, только для чтения при редактировании</span></label></li>
+        <li><label><input type="checkbox" id="m3j"><span>Фото: копия в папку программы, 300×200, путь в БД, старое удаляется</span></label></li>
+        <li><label><input type="checkbox" id="m3k"><span>Нельзя открыть второе окно редактирования</span></label></li>
+        <li><label><input type="checkbox" id="m3l"><span>Удаление товара, кроме тех, что есть в заказах</span></label></li>
+        <li><label><input type="checkbox" id="m3m"><span>После изменений список обновляется</span></label></li>
+      </ul></div>
+    </details>
+
+    <details class="module">
+      <summary>Модуль 4. Заказы и git <span class="meta">1 ч · 25 б.</span></summary>
+      <div class="body"><ul class="check">
+        <li><label><input type="checkbox" id="m4a"><span>Кнопка «Заказы» у менеджера и админа, список заказов</span></label></li>
+        <li><label><input type="checkbox" id="m4b"><span>Админ: добавить и редактировать заказ (артикул, статус списком, адрес ПВЗ, дата заказа, дата выдачи)</span></label></li>
+        <li><label><input type="checkbox" id="m4c"><span>Админ: удалить заказ</span></label></li>
+        <li><label><input type="checkbox" id="m4d"><span>Git: исходники (не архивом), exe, скрипт БД, картинки и документы</span></label></li>
+      </ul></div>
+    </details>
+  </section>
+
+  <section id="db">
+    <h2>Как устроена база</h2>
+    <p><b>Таблица</b> похожа на лист Excel: строки — записи, столбцы — поля. У каждой строки есть номер <code>id</code>, это <b>первичный ключ</b>: он никогда не повторяется.</p>
+    <p><b>Внешний ключ</b> — поле, где хранится <code>id</code> из другой таблицы. Например, в <code>users.role_id</code> записано 2, а не слово «Менеджер». На ER-диаграмме это стрелка.</p>
+    <p><b>3-я нормальная форма</b> простыми словами: один факт хранится в одном месте. Слово «Kari» записано один раз в таблице <code>suppl</code>, а у товаров только его номер.</p>
+    <div class="table-box">
+      <table>
+        <thead><tr><th>Таблица</th><th>Что в ней</th><th>Ссылается на</th></tr></thead>
+        <tbody>
+          <tr><td><code>role</code></td><td>Администратор, Менеджер, Авторизированный клиент</td><td>—</td></tr>
+          <tr><td><code>users</code></td><td>ФИО, логин, пароль</td><td>role</td></tr>
+          <tr><td><code>tovar</code></td><td>артикул, название, ед. изм., цена, скидка, остаток, описание, фото</td><td>suppl, manuf, cat</td></tr>
+          <tr><td><code>suppl</code> / <code>manuf</code> / <code>cat</code></td><td>поставщики / производители / категории</td><td>—</td></tr>
+          <tr><td><code>pvz</code></td><td>адреса пунктов выдачи</td><td>—</td></tr>
+          <tr><td><code>status</code></td><td>Новый, Завершен</td><td>—</td></tr>
+          <tr><td><code>zakaz</code></td><td>даты, код получения</td><td>pvz, users, status</td></tr>
+          <tr><td><code>zakaz_tovar</code></td><td>какие товары и сколько в заказе</td><td>zakaz, tovar</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><code>zakaz_tovar</code> нужна потому, что в одном заказе много товаров, а один товар бывает во многих заказах. Это связь <b>«многие ко многим»</b>.</p>
+  </section>
+
+  <section id="sql">
+    <h2>SQL-шпаргалка</h2>
+    <h3>Создать таблицу</h3>
+<pre>CREATE TABLE users (
+    id      INTEGER PRIMARY KEY AUTOINCREMENT,
+    role_id INTEGER NOT NULL REFERENCES role(id),
+    fio     TEXT NOT NULL,
+    login   TEXT NOT NULL UNIQUE,
+    pass    TEXT NOT NULL
+);</pre>
+    <p><code>NOT NULL</code> — поле обязательно. <code>UNIQUE</code> — без повторов. <code>AUTOINCREMENT</code> — номер ставится сам.</p>
+    <h3>Добавить, изменить, удалить</h3>
+<pre>INSERT INTO role (role) VALUES ('Менеджер');
+UPDATE tovar SET quant = 10 WHERE id = 3;
+DELETE FROM tovar WHERE id = 3;</pre>
+    <div class="trap"><b>Опасно:</b> <code>UPDATE</code> и <code>DELETE</code> без <code>WHERE</code> меняют или стирают все строки таблицы.</div>
+    <h3>Выбрать с соединением таблиц</h3>
+<pre>SELECT users.fio, role.role
+FROM users
+JOIN role ON role.id = users.role_id
+WHERE users.login = ? AND users.pass = ?;</pre>
+    <p><code>JOIN ... ON</code> склеивает строки двух таблиц, где номер совпадает. Так вместо <code>role_id = 2</code> получаем слово «Менеджер».</p>
+    <h3>Поиск и сортировка</h3>
+<pre>SELECT * FROM tovar
+WHERE name LIKE '%бот%'
+ORDER BY quant DESC;</pre>
+    <p><code>LIKE '%бот%'</code> — содержит «бот». <code>ASC</code> — по возрастанию, <code>DESC</code> — по убыванию.</p>
+  </section>
+
+  <section id="login">
+    <h2>Шаг 1: окно входа</h2>
+    <p class="lead">Файл <code>shop_app.py</code>. Разбор по кускам: запоминай идею каждого куска, а не буквы.</p>
+
+    <h3>1. Импорты</h3>
+<pre>import sqlite3
+import tkinter as tk
+from tkinter import messagebox
+
+from PIL import Image, ImageTk</pre>
+    <p><code>sqlite3</code> — работа с базой. <code>tkinter</code> — окна и кнопки. <code>messagebox</code> — всплывающие сообщения. <code>PIL</code> (Pillow) — открыть jpg и изменить размер.</p>
+
+    <h3>2. Одна функция для всех запросов</h3>
+<pre>def query(sql, params=()):
+    with sqlite3.connect(DB_PATH) as conn:
+        return conn.execute(sql, params).fetchall()</pre>
+    <p>Подключается к базе, выполняет запрос, возвращает список строк. Значения передаются через <code>?</code>, а не вклеиваются в текст запроса: так защищаются от SQL-инъекций.</p>
+
+    <h3>3. Класс окна</h3>
+<pre>class ShopApp(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.geometry("1000x650")
+        self.iconbitmap(f"{RES_DIR}/Icon.ico")
+        self.logo = ImageTk.PhotoImage(Image.open(f"{RES_DIR}/Icon.png").resize((80, 80)))
+        self.user_fio = None
+        self.user_role = None
+        self.show_login()</pre>
+    <p><code>self</code> — «память» программы. Всё, что должно жить между экранами (кто вошёл, логотип), хранится в <code>self.что-то</code>.</p>
+    <div class="trap"><b>Ловушка:</b> картинку обязательно сохранять в <code>self.logo</code>. Если положить её в обычную переменную, Python её удалит, и на экране будет пусто, без всякой ошибки.</div>
+
+    <h3>4. Смена экранов</h3>
+<pre>def clear_window(self):
+    for widget in self.winfo_children():
+        widget.destroy()</pre>
+    <p>Окно одно. Чтобы показать новый экран, удаляем всё старое и рисуем новое. Каждый экран — своя функция: <code>show_login()</code>, <code>show_products()</code>.</p>
+
+    <h3>5. Проверка логина</h3>
+<pre>def login(self):
+    login = self.login_entry.get().strip()
+    password = self.password_entry.get()
+    if not login or not password:
+        messagebox.showwarning("Не все поля заполнены", "Введите логин и пароль.")
+        return
+
+    rows = query(
+        "SELECT users.fio, role.role FROM users "
+        "JOIN role ON role.id = users.role_id "
+        "WHERE users.login = ? AND users.pass = ?",
+        (login, password),
+    )
+    if not rows:
+        messagebox.showerror("Ошибка входа", "Неверный логин или пароль. ...")
+        return
+
+    self.user_fio, self.user_role = rows[0]
+    self.show_products()</pre>
+    <p>Три шага, которые нужно помнить наизусть:</p>
+    <ul>
+      <li>поля пустые → <code>showwarning</code> и выход из функции;</li>
+      <li>запрос ничего не нашёл → <code>showerror</code> и выход;</li>
+      <li>нашёл → запомнить ФИО и роль в <code>self</code>, показать товары.</li>
+    </ul>
+
+    <h3>6. Шапка с ФИО и выходом</h3>
+<pre>tk.Button(header, text="Выход", command=self.show_login).pack(side="right")
+tk.Label(header, text=f"{self.user_fio} ({self.user_role})").pack(side="right")</pre>
+    <p><code>side="right"</code> прижимает к правому краю: так ФИО оказывается в правом верхнем углу, как требует задание. <code>command=</code> — какую функцию вызвать по нажатию (без скобок!).</p>
+  </section>
+
+  <section id="traps">
+    <h2>Ловушки</h2>
+    <div class="trap"><b>Данные.</b> В import есть дата 30.02.2025, пробел в конце «Новый », заказ 2022 года среди 2025-х, товары без фото. Эксперты проверяют, заметил ли ты.</div>
+    <div class="trap"><b>Кодировка.</b> CSV для импорта сохранять в UTF-8, иначе вместо русских букв будут знаки вопроса.</div>
+    <div class="trap"><b>command=self.login()</b> со скобками вызовет функцию сразу при запуске, а не по нажатию. Правильно: <code>command=self.login</code>.</div>
+    <div class="trap"><b>Картинки в tkinter</b> пропадают, если не сохранить ссылку в <code>self</code>.</div>
+    <div class="trap"><b>Удаление товара</b> из заказа запрещено: перед <code>DELETE</code> проверить, есть ли он в <code>zakaz_tovar</code>.</div>
+  </section>
+
+  <section id="cards">
+    <h2>Карточки для заучивания</h2>
+    <div class="deck" aria-live="polite">
+      <div class="count"><span id="cardNum"></span>
+        <select id="cardTopic" aria-label="Тема карточек">
+          <option value="all">Все темы</option>
+          <option value="exam">Экзамен</option>
+          <option value="db">База и SQL</option>
+          <option value="py">Python и tkinter</option>
+        </select>
+      </div>
+      <div class="q" id="cardQ"></div>
+      <div class="a" id="cardA" hidden></div>
+      <div class="btns">
+        <button class="primary" id="btnShow" type="button">Показать ответ</button>
+        <button id="btnPrev" type="button">Назад</button>
+        <button id="btnNext" type="button">Дальше</button>
+        <button id="btnShuffle" type="button">Перемешать</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+const CARDS = [
+  ["exam", "Сколько длится базовый уровень ГИА и какие модули в нём?", "3 часа, модули 1, 2 и 3."],
+  ["exam", "Что запрещено на экзамене?", "ИИ, чаты, мессенджеры, GitHub и другие репозитории, сайты вопросов и ответов (StackOverflow), соцсети. Интернет только 15 минут."],
+  ["exam", "Какой цвет фона у товара со скидкой больше 15%?", "#2E8B57."],
+  ["exam", "Как показать цену, если есть скидка?", "Старая цена перечёркнута красным, рядом итоговая цена чёрным."],
+  ["exam", "Как выделить товар, которого нет на складе?", "Голубым фоном строки."],
+  ["exam", "Что показать вместо фото, если его нет?", "Картинку-заглушку picture.png из ресурсов."],
+  ["exam", "Кто может искать, фильтровать и сортировать товары?", "Только менеджер и администратор."],
+  ["exam", "Кто может добавлять, редактировать и удалять товары?", "Только администратор."],
+  ["exam", "Какой товар нельзя удалить?", "Тот, который есть в каком-либо заказе."],
+  ["exam", "Какой первый пункт в фильтре по поставщику?", "«Все поставщики» — сбрасывает фильтр."],
+  ["exam", "Какой размер фото товара?", "300×200 пикселей. В БД хранится путь, старое фото при замене удаляется."],
+  ["exam", "По какому ГОСТу блок-схема?", "ГОСТ 19.701-90, сдаётся в PDF."],
+  ["exam", "Где должно быть ФИО пользователя?", "В правом верхнем углу окна."],
+  ["exam", "Что должно быть в git в модуле 4?", "Исходный код (не архив), exe-файл, скрипт базы данных, картинки и документы."],
+  ["db", "Что такое первичный ключ?", "Поле, которое однозначно определяет строку и никогда не повторяется (обычно id)."],
+  ["db", "Что такое внешний ключ?", "Поле, где хранится id строки из другой таблицы. Например users.role_id → role.id."],
+  ["db", "3-я нормальная форма простыми словами?", "Каждый факт хранится в одном месте: повторяющиеся значения вынесены в справочники, а в таблице только их id."],
+  ["db", "Зачем таблица zakaz_tovar?", "Связь «многие ко многим»: в заказе много товаров, товар бывает во многих заказах."],
+  ["db", "Чем опасен DELETE без WHERE?", "Он удалит все строки таблицы."],
+  ["db", "Что делает JOIN ... ON?", "Склеивает строки двух таблиц, у которых совпадают указанные поля."],
+  ["db", "Как найти товары, в названии которых есть «бот»?", "WHERE name LIKE '%бот%'"],
+  ["db", "Как отсортировать по убыванию количества?", "ORDER BY quant DESC (по возрастанию — ASC)."],
+  ["db", "Зачем в запросе знаки ?", "Значения передаются отдельно, а не вклеиваются в текст: защита от SQL-инъекций."],
+  ["py", "Какой стиль имён для Python на экзамене?", "snake_case: show_login, user_fio."],
+  ["py", "Почему картинка в tkinter может не появиться?", "Её не сохранили в self (например self.logo), и Python удалил объект."],
+  ["py", "command=self.login или command=self.login() ?", "Без скобок. Со скобками функция вызовется сразу при запуске."],
+  ["py", "Как показать красное сообщение об ошибке?", "messagebox.showerror(\"Заголовок\", \"Текст: что не так и как исправить\")"],
+  ["py", "Как показать предупреждение?", "messagebox.showwarning(\"Заголовок\", \"Текст\")"],
+  ["py", "Как сменить экран в одном окне?", "Удалить все виджеты (clear_window) и нарисовать новый экран своей функцией."],
+  ["py", "Как прижать элемент к правому краю?", ".pack(side=\"right\")"],
+  ["py", "Как получить текст из поля ввода?", "self.login_entry.get(), лишние пробелы убрать .strip()"],
+  ["py", "Как скрыть пароль звёздочками?", "tk.Entry(..., show=\"*\")"]
+];
+
+let deck = [], pos = 0;
+const $ = id => document.getElementById(id);
+
+function buildDeck() {
+  const topic = $("cardTopic").value;
+  deck = CARDS.filter(c => topic === "all" || c[0] === topic);
+  pos = 0;
+  render();
+}
+function render() {
+  const card = deck[pos];
+  $("cardNum").textContent = `Карточка ${pos + 1} из ${deck.length}`;
+  $("cardQ").textContent = card[1];
+  $("cardA").textContent = card[2];
+  $("cardA").hidden = true;
+  $("btnShow").hidden = false;
+}
+$("btnShow").addEventListener("click", () => { $("cardA").hidden = false; $("btnShow").hidden = true; });
+$("btnNext").addEventListener("click", () => { pos = (pos + 1) % deck.length; render(); });
+$("btnPrev").addEventListener("click", () => { pos = (pos - 1 + deck.length) % deck.length; render(); });
+$("btnShuffle").addEventListener("click", () => {
+  for (let i = deck.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [deck[i], deck[j]] = [deck[j], deck[i]]; }
+  pos = 0; render();
+});
+$("cardTopic").addEventListener("change", buildDeck);
+buildDeck();
+
+// Галочки чек-листа запоминаются только в этом браузере
+document.querySelectorAll("ul.check input").forEach(box => {
+  try { box.checked = localStorage.getItem("chk_" + box.id) === "1"; } catch (e) {}
+  box.addEventListener("change", () => {
+    try { localStorage.setItem("chk_" + box.id, box.checked ? "1" : "0"); } catch (e) {}
+  });
+});
+</script>
+
+</body>
+</html>
